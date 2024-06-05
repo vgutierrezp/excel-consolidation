@@ -30,52 +30,20 @@ def main():
         st.error("No se pudieron cargar los datos.")
         return
 
-    # Mostrar solo las columnas especificadas
-    columns_to_show = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    data = data[columns_to_show]
+    # Mostrar todos los datos sin filtrar las columnas
+    st.write(data)
 
     # Verificar si hay duplicados y eliminarlos
     data = data.drop_duplicates()
 
-    # Formatear las columnas de fecha
-    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y')
-
-    # Ordenar los meses según el calendario
-    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
-
-    # Filtrado por columnas específicas
-    st.sidebar.header('Filtros')
-
-    # Inicializar filtros
-    selected_month = st.sidebar.selectbox('Mes', options=[''] + month_order)
-    filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
-
-    selected_brand = st.sidebar.selectbox('Marca', options=[''] + list(filtered_data['Marca'].dropna().unique()))
-    filtered_data = filtered_data if selected_brand == '' else filtered_data[filtered_data['Marca'] == selected_brand]
-
-    selected_store = st.sidebar.selectbox('Tienda', options=[''] + list(filtered_data['Tienda'].dropna().unique()))
-    filtered_data = filtered_data if selected_store == '' else filtered_data[filtered_data['Tienda'] == selected_store]
-
-    selected_family = st.sidebar.selectbox('Familia', options=[''] + list(filtered_data['Familia'].dropna().unique()))
-    filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
-
-    # Ordenar por Mes y Familia
-    filtered_data = filtered_data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
-
-    # Mostrar los datos filtrados
-    st.write(filtered_data)
-
-    # Opción para descargar el archivo filtrado
+    # Opción para descargar el archivo completo
     st.sidebar.header('Descargar Datos')
-    if not filtered_data.empty:
-        excel_data = to_excel(filtered_data)
+    if not data.empty:
+        excel_data = to_excel(data)
         st.sidebar.download_button(
             label='Descargar Excel',
             data=excel_data,
-            file_name='filtered_data.xlsx',
+            file_name='complete_data.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
