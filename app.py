@@ -6,7 +6,7 @@ from io import BytesIO
 @st.cache_data
 def load_data():
     data = pd.read_excel('consolidated_file.xlsx')
-    return data
+    return data.drop_duplicates()
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -18,7 +18,7 @@ def to_excel(df):
 
 # Función principal
 def main():
-    st.title("Navegador de Datos Consolidado")
+    st.title("PLAN ANUAL DE MANTENIMIENTO PREVENTIVO")
 
     data = load_data()
 
