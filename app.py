@@ -26,6 +26,9 @@ def main():
     columns_to_show = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     data = data[columns_to_show]
 
+    # Verificar si hay duplicados y eliminarlos
+    data = data.drop_duplicates()
+
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
@@ -70,3 +73,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
