@@ -22,6 +22,9 @@ def main():
 
     data = load_data()
 
+    # Eliminar duplicados
+    data = data.drop_duplicates()
+
     # Mostrar solo las columnas especificadas
     columns_to_show = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     data = data[columns_to_show]
