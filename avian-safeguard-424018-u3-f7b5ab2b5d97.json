@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "avian-safeguard-424018-u3",
+  "private_key_id": "f7b5ab2b5d9797ac796e0d123d26074d42761142",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC9NDuC6CyPS3F6\nn25zCRM+1ymbinQhXVsLnPhyPGcbSBj3cdCVB1PAiZAIqpZKEndDH9YbWytD8vrE\nyNvArb1yyZhBPlW2unjDCPjN5XyJejvAGCOOYq51SyeIYW+Tj/lS7aQYyWRqHYX8\nhkxuD27paTCnOWvZxHfvYtf3mbeZme+Rvm5QcbRQacp9JpIubA/IkGFISWOOgC5d\nS+5CJyntNCazqvGzo02goAtflfp7s6td5pZxBm663wvv5K959ke+9aMXfJ94wZSz\nS2F6epbtfHqpVyG/EL2eWhMQAMDCQayKCxx0ZmCRbMy2KoGpN7FUxPG7Y4xxbOO7\n+r+ej5D7AgMBAAECggEAU3cqVap0ldYzPmP8xnSXb95dNYeTiXB0jJ/3nfV1irx4\nfxhPap7r3IES8C/I0u5ofE0cF79VS8lxxMPS5aH/dBbousdz6oNCaM+ZasM0+DTb\nDPfZH6P60DWSQACzxwX5eBLrlB+r04AormjUaK0YQZGs6+hR4qRgQFN7cHf4XaKf\nio3k8/zCMFC8d2oACXLX0CG+D32w3a2mUIrkk7+KBadHUtxWbv3EGVahqIWSLIG4\n+J7J6sxK5uaH0+LCRHNX4H1sQtKcDOQeiIcjN+oMRKzB6xeof1iTtSHepIT1XBVM\nFwzH73wRWvR7eOG2hQHoXeNv7Fl3tpLUmx/10WlSwQKBgQDlhlJLFM8X+eW1wd6N\nCPWyAPmojMPkAhN+MSTfmHfqYn50nryqiQF/DOVrbQ8n8IVs4l+dJz5YUGHtLUg9\nNEgY/mg/qvCtlawE6uHpeBYCi1M0CUjKA8W79370wbSdCpEn9nXQ0iM5bdu26DDy\nzDtzk0d2F+vxt89vzFXd14IImwKBgQDTB0ZHbqistbJJfKXAqyKJNmRvCEJQYoKq\nbtF3Uge+pnU5bPD1WHrxTfS0BQ7BK4GATAPEnWm3VzeKtrkLv/oZtvgCwSDkVbdq\nALIdkPzTpzXe9r91knaJNj6sqQ/v4+eFqZ1u35lmUUSBYv+zID4HXyajGymTYA/h\noRjqTSgvIQKBgQCfiG1KonwPPjLb0pTNkpyzzNm6vZyqroa9/4qRn3g6AZvDk1Gv\ndusDVANiV7thF1ymAfJTWSOMXtKx9/duExjJxorPNhFzlcSq5ld/32fs/MooMQvW\n3ihiLfSgSsMvJFkgXb4mFulE0YcV6u2a1Tm9a3EQNDBbIlecbXqBZ3mKYQKBgEBV\nCGTAZGV6YqaqfDFXOokP7uA2aVjuHx1r+Slh9YB2aGggQPjah2hGtqGmpQ/Yfnsp\nMUDgKBk/WmxMNe9SECGEuOjGDYvuYaLMIYCH8btoTzDwkf96re44fjTOuVANb0g9\nJARn3/DkN3kmQANQgfhnVnUE09DcyRqkrN7ItMZhAoGAPL6y4WQlc/PHNY4LO3/j\nNJ9QtIg610H9jBeWFvOcNOwNrWACSTz3/7/YDNfgBlKYc1NfSHjSzP0XhaKjQqZL\nnElH2mdCaY2IqilLwqAvMPlnG79b8trT6ra5ktA63duAeCrDTgoPasqcVZT2vqSu\n49f88jXPXor6arYO4hPaGkk=\n-----END PRIVATE KEY-----\n",
+  "client_email": "chatbot-mantenimiento@avian-safeguard-424018-u3.iam.gserviceaccount.com",
+  "client_id": "115321030891122372644",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/chatbot-mantenimiento%40avian-safeguard-424018-u3.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
