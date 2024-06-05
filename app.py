@@ -5,8 +5,12 @@ from io import BytesIO
 # Cargar el archivo consolidado
 @st.cache_data
 def load_data():
-    data = pd.read_excel('consolidated_file.xlsx')
-    return data
+    try:
+        data = pd.read_excel('consolidated_file.xlsx')
+        return data
+    except Exception as e:
+        st.error(f"Error al cargar los datos: {e}")
+        return pd.DataFrame()
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -22,18 +26,21 @@ def main():
 
     data = load_data()
 
-    # Eliminar duplicados
-    data = data.drop_duplicates()
+    if data.empty:
+        st.error("No se pudieron cargar los datos.")
+        return
 
     # Mostrar solo las columnas especificadas
     columns_to_show = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     data = data[columns_to_show]
 
+    # Verificar si hay duplicados y eliminarlos
+    data = data.drop_duplicates()
+
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce')
-        data[col] = data[col].apply(lambda x: x.strftime('%d/%m/%y') if not pd.isnull(x) and x >= pd.Timestamp('2023-01-01') else '')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
 
     # Ordenar los meses según el calendario
     month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
