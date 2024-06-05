@@ -1,15 +1,11 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-import os
 
 # Cargar el archivo consolidado
 @st.cache_data
 def load_data():
-    # Asegurarse de que el archivo consolidado está en la misma carpeta que la aplicación
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, 'consolidated_file.xlsx')
-    data = pd.read_excel(file_path)
+    data = pd.read_excel('consolidated_file.xlsx')
     return data
 
 # Función para convertir el DataFrame a Excel
@@ -44,6 +40,9 @@ def main():
 
     selected_family = st.sidebar.selectbox('Familia', options=[''] + list(filtered_data['Familia'].dropna().unique()))
     filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
+
+    # Ordenar por Mes y Familia
+    filtered_data = filtered_data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
 
     # Mostrar los datos filtrados
     st.write(filtered_data)
