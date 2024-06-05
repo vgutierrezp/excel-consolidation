@@ -6,15 +6,20 @@ from io import BytesIO
 # Cargar los archivos Excel de la carpeta especificada
 @st.cache_data
 def load_data():
-    folder_path = 'C:/Users/vgutierrez/OneDrive - Servicios Compartidos de Restaurantes SAC/Documentos/01 Plan Preventivo Anual NGR/Preventivo/2024 PAM/PROVEEDORES'  # Ruta de tu carpeta
+    # Asegúrate de que esta sea la ruta correcta en tu sistema
+    folder_path = 'C:/Users/vgutierrez/OneDrive - Servicios Compartidos de Restaurantes SAC/Documentos/01 Plan Preventivo Anual NGR/Preventivo/2024 PAM/PROVEEDORES'
+    
+    # Comprobar si la ruta existe
     if not os.path.exists(folder_path):
         st.error(f"Directorio {folder_path} no encontrado.")
-        return pd.DataFrame()  # Devuelve un DataFrame vacío si la carpeta no existe
+        return pd.DataFrame()  # Devolver un DataFrame vacío si la carpeta no existe
     
     all_files = [f for f in os.listdir(folder_path) if f.endswith('.xlsx')]
+    
+    # Comprobar si hay archivos Excel en la carpeta
     if not all_files:
         st.error("No se encontraron archivos Excel en el directorio especificado.")
-        return pd.DataFrame()  # Devuelve un DataFrame vacío si no hay archivos
+        return pd.DataFrame()  # Devolver un DataFrame vacío si no hay archivos
 
     # Cargar y concatenar todos los archivos de Excel en un solo DataFrame
     df_list = [pd.read_excel(os.path.join(folder_path, file)) for file in all_files]
