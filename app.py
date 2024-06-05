@@ -5,12 +5,8 @@ from io import BytesIO
 # Cargar el archivo consolidado
 @st.cache_data
 def load_data():
-    try:
-        data = pd.read_excel('consolidated_file.xlsx')
-        return data
-    except Exception as e:
-        st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame()
+    data = pd.read_excel('consolidated_file.xlsx')
+    return data
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -25,10 +21,6 @@ def main():
     st.title("PLAN ANUAL DE MANTENIMIENTO PREVENTIVO")
 
     data = load_data()
-
-    if data.empty:
-        st.error("No se pudieron cargar los datos.")
-        return
 
     # Mostrar solo las columnas especificadas
     columns_to_show = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
