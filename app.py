@@ -5,7 +5,7 @@ from io import BytesIO
 # Cargar el archivo consolidado
 @st.cache_data
 def load_data():
-    data = pd.read_excel('consolidated_file.xlsx')
+    data = pd.read_excel(r'C:\Users\vgutierrez\chatbot_project\consolidated_file.xlsx')
     return data
 
 # Función para convertir el DataFrame a Excel
