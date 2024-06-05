@@ -26,9 +26,10 @@ def to_excel(df):
 def main():
     st.title("Navegador de Datos Consolidado")
 
-    if st.button('Actualizar Datos'):
+    # Botón para actualizar los datos
+    if st.sidebar.button('Actualizar Datos'):
         st.cache_data.clear()
-
+    
     data = load_data()
 
     # Mostrar solo las columnas especificadas
