@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
+import os
 
 # Función para cargar los datos
 @st.cache_data
 def load_data():
     try:
         file_path = r'C:\Users\vgutierrez\chatbot_project\consolidated_file.xlsx'
+        st.write(f"Intentando cargar el archivo desde: {file_path}")  # Mensaje para depuración
         data = pd.read_excel(file_path)
         return data
     except FileNotFoundError as e:
