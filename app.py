@@ -28,15 +28,11 @@ def main():
     # Verificar si hay duplicados y eliminarlos
     data = data.drop_duplicates()
 
-    # Ordenar los meses según el calendario
-    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
-
     # Filtrado por columnas específicas
     st.sidebar.header('Filtros')
 
     # Inicializar filtros
-    selected_month = st.sidebar.selectbox('Mes', options=[''] + month_order)
+    selected_month = st.sidebar.selectbox('Mes', options=[''] + list(data['Mes'].dropna().unique()))
     filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
 
     selected_brand = st.sidebar.selectbox('Marca', options=[''] + list(filtered_data['Marca'].dropna().unique()))
@@ -47,9 +43,6 @@ def main():
 
     selected_family = st.sidebar.selectbox('Familia', options=[''] + list(filtered_data['Familia'].dropna().unique()))
     filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
-
-    # Ordenar por Mes y Familia
-    filtered_data = filtered_data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
 
     # Mostrar los datos filtrados
     st.write(filtered_data)
