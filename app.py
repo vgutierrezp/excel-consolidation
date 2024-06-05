@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import os
 
 # Cargar el archivo consolidado
 @st.cache_data
 def load_data():
-    data = pd.read_excel(r'C:\Users\vgutierrez\chatbot_project\consolidated_file.xlsx')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, 'consolidated_file.xlsx')
+    data = pd.read_excel(file_path)
     return data
 
 # Función para convertir el DataFrame a Excel
