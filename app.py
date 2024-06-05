@@ -4,9 +4,15 @@ import pandas as pd
 # Función para cargar los datos
 @st.cache_data
 def load_data():
-    file_path = r'C:\Users\vgutierrez\chatbot_project\consolidated_file.xlsx'
-    data = pd.read_excel(file_path)
-    return data
+    try:
+        file_path = r'C:\Users\vgutierrez\chatbot_project\consolidated_file.xlsx'
+        data = pd.read_excel(file_path)
+        return data
+    except FileNotFoundError as e:
+        st.error(f"El archivo no se encontró: {e}")
+    except Exception as e:
+        st.error(f"Ocurrió un error al cargar los datos: {e}")
+    return None
 
 # Función principal
 def main():
