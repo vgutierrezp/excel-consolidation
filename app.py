@@ -1,11 +1,17 @@
 import streamlit as st
 import pandas as pd
+import os
 from io import BytesIO
 
-# Cargar el archivo consolidado
+# Cargar los archivos Excel de la carpeta especificada
 @st.cache_data
 def load_data():
-    data = pd.read_excel('consolidated_file.xlsx')
+    folder_path = '/mnt/data/'  # Ruta de tu carpeta
+    all_files = [f for f in os.listdir(folder_path) if f.endswith('.xlsx')]
+
+    # Cargar y concatenar todos los archivos de Excel en un solo DataFrame
+    df_list = [pd.read_excel(os.path.join(folder_path, file)) for file in all_files]
+    data = pd.concat(df_list, ignore_index=True)
     return data
 
 # Función para convertir el DataFrame a Excel
@@ -19,6 +25,9 @@ def to_excel(df):
 # Función principal
 def main():
     st.title("Navegador de Datos Consolidado")
+
+    if st.button('Actualizar Datos'):
+        st.cache_data.clear()
 
     data = load_data()
 
