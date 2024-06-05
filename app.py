@@ -22,17 +22,14 @@ def main():
 
     data = load_data()
 
-    # Mostrar solo las columnas especificadas
-    columns_to_show = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    data = data[columns_to_show]
-
     # Verificar si hay duplicados y eliminarlos
     data = data.drop_duplicates()
 
-    # Formatear las columnas de fecha
+    # Formatear las columnas de fecha y mantener las celdas vacías
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y')
+        data[col] = data[col].replace('NaT', '')
 
     # Ordenar los meses según el calendario
     month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
