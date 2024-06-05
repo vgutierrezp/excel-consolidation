@@ -6,6 +6,7 @@ import os
 # Cargar el archivo consolidado
 @st.cache_data
 def load_data():
+    # Asegurarse de que el archivo consolidado está en la misma carpeta que la aplicación
     current_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(current_dir, 'consolidated_file.xlsx')
     data = pd.read_excel(file_path)
