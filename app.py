@@ -5,7 +5,6 @@ import os
 from datetime import datetime
 
 # Cargar el archivo consolidado desde el repositorio
-@st.cache_data
 def load_data():
     file_path = 'consolidated_file.xlsx'
     try:
@@ -75,6 +74,7 @@ def main():
 
     # Mostrar la fecha y hora de la última actualización del archivo
     if file_path:
+        st.write(f"Usando el archivo: {file_path}")  # Mensaje de depuración
         last_modified_time = os.path.getmtime(file_path)
         last_modified_datetime = datetime.fromtimestamp(last_modified_time).strftime('%d/%m/%Y %H:%M:%S')
         st.write(f"Última actualización del archivo: {last_modified_datetime}")
