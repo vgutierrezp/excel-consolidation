@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import os
+from datetime import datetime
 
 # Cargar el archivo consolidado desde el repositorio
 @st.cache_data
@@ -21,9 +23,25 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
+# Función para obtener la fecha y hora de la última modificación del archivo
+def get_last_modified_time(file_path):
+    try:
+        timestamp = os.path.getmtime(file_path)
+        last_modified_time = datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')
+        return last_modified_time
+    except Exception as e:
+        st.error(f"Error al obtener la fecha de modificación: {e}")
+        return "N/A"
+
 # Función principal
 def main():
     st.title("Programa de Mantenimiento Preventivo")
+
+    file_path = 'consolidated_file.xlsx'
+    last_modified_time = get_last_modified_time(file_path)
+    
+    # Mostrar la fecha y hora de la última actualización del archivo
+    st.write(f"**Última actualización del archivo:** {last_modified_time}")
 
     data = load_data()
 
