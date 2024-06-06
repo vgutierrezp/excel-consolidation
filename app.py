@@ -46,4 +46,53 @@ def main():
     # Inicializar filtros con listas ordenadas
     months = sorted([''] + list(data['Mes'].dropna().unique()))
     brands = sorted([''] + list(data['Marca'].dropna().unique()))
-    stores = sorted([''] + list(data['T
+    stores = sorted([''] + list(data['Tienda'].dropna().unique()))
+    families = sorted([''] + list(data['Familia'].dropna().unique()))
+
+    # Crear filtros dependientes
+    selected_month = st.sidebar.selectbox('Mes', options=months)
+    filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
+
+    selected_brand = st.sidebar.selectbox('Marca', options=sorted([''] + list(filtered_data['Marca'].dropna().unique())))
+    filtered_data = filtered_data if selected_brand == '' else filtered_data[filtered_data['Marca'] == selected_brand]
+
+    selected_store = st.sidebar.selectbox('Tienda', options=sorted([''] + list(filtered_data['Tienda'].dropna().unique())))
+    filtered_data = filtered_data if selected_store == '' else filtered_data[filtered_data['Tienda'] == selected_store]
+
+    selected_family = st.sidebar.selectbox('Familia', options=sorted([''] + list(filtered_data['Familia'].dropna().unique())))
+    filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
+
+    # Columnas a mostrar
+    columns_to_show = ['Mes', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 
+                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
+    data = filtered_data[columns_to_show]
+
+    # Formatear las columnas de fecha
+    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
+    for col in date_columns:
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
+
+    # Ordenar los meses según el calendario y luego por Familia
+    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
+    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
+    data = data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
+
+    # Mostrar los datos filtrados con las columnas seleccionadas
+    st.write(data)
+
+    # Opción para descargar el archivo filtrado
+    st.sidebar.header('Descargar Datos')
+    if not data.empty:
+        excel_data = to_excel(data)
+        st.sidebar.download_button(
+            label='Descargar Excel',
+            data=excel_data,
+            file_name='filtered_data.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    # Mostrar el link de certificados
+    st.write("[Link de certificados](https://example.com)")
+
+if __name__ == "__main__":
+    main()
