@@ -13,7 +13,7 @@ def load_data():
         return data, file_path
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame(), file_path
+        return pd.DataFrame(), None
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -32,13 +32,6 @@ def main():
     if data.empty:
         st.error("No se pudieron cargar los datos.")
         return
-
-    # Obtener fecha de última modificación
-    last_modified = os.path.getmtime(file_path)
-    last_modified_date = datetime.fromtimestamp(last_modified).strftime('%d/%m/%Y %H:%M:%S')
-
-    # Mostrar fecha de última actualización
-    st.write(f"Última actualización del archivo: {last_modified_date}")
 
     # Filtrado por columnas específicas
     st.sidebar.header('Filtros')
@@ -80,6 +73,12 @@ def main():
     # Mostrar los datos filtrados con las columnas seleccionadas
     st.write(data)
 
+    # Mostrar la fecha y hora de la última actualización del archivo
+    if file_path:
+        last_modified_time = os.path.getmtime(file_path)
+        last_modified_datetime = datetime.fromtimestamp(last_modified_time).strftime('%d/%m/%Y %H:%M:%S')
+        st.write(f"Última actualización del archivo: {last_modified_datetime}")
+
     # Opción para descargar el archivo filtrado
     st.sidebar.header('Descargar Datos')
     if not data.empty:
@@ -90,9 +89,6 @@ def main():
             file_name='filtered_data.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-
-    # Mostrar el link de certificados
-    st.write("[Link de certificados](https://example.com)")
 
 if __name__ == "__main__":
     main()
