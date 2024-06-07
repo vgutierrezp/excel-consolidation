@@ -75,8 +75,11 @@ def main():
 
     # Mostrar fecha y hora de la última actualización
     st.write(f"Usando el archivo: {file_path}")
-    file_stats = os.stat(file_path)
-    st.write(f"Última actualización del archivo: {pd.to_datetime(file_stats.st_mtime, unit='s').strftime('%d/%m/%Y %H:%M:%S')}")
+    if os.path.exists(file_path):
+        file_stats = os.stat(file_path)
+        st.write(f"Última actualización del archivo: {pd.to_datetime(file_stats.st_mtime, unit='s').strftime('%d/%m/%Y %H:%M:%S')}")
+    else:
+        st.error(f"El archivo {file_path} no existe.")
 
     # Opción para descargar el archivo filtrado
     st.sidebar.header('Descargar Datos')
