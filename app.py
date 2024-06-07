@@ -36,7 +36,14 @@ def main():
 
     # Inicializar filtros con listas ordenadas
     month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    months = sorted(data['Mes'].dropna().unique(), key=lambda x: month_order.index(x))
+    
+    # Separar meses válidos y no válidos
+    unique_months = data['Mes'].dropna().unique()
+    valid_months = [month for month in unique_months if month in month_order]
+    invalid_months = [month for month in unique_months if month not in month_order]
+    
+    # Ordenar los meses válidos y agregar los no válidos al final
+    months = sorted(valid_months, key=lambda x: month_order.index(x)) + sorted(invalid_months)
     brands = sorted(data['Marca'].dropna().unique())
     stores = sorted(data['Tienda'].dropna().unique())
     families = sorted(data['Familia'].dropna().unique())
@@ -65,7 +72,7 @@ def main():
         data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
-    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
+    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order + invalid_months, ordered=True)
     data = data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
 
     # Mostrar los datos filtrados con las columnas seleccionadas
