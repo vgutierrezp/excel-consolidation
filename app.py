@@ -2,17 +2,18 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import os
-from datetime import datetime
 
 # Cargar el archivo consolidado desde el repositorio
+@st.cache_data
 def load_data():
     file_path = 'consolidated_file.xlsx'
+    st.write(f"Usando el archivo: {file_path}")
     try:
         data = pd.read_excel(file_path)
-        return data, file_path
+        return data
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame(), None
+        return pd.DataFrame()
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -26,7 +27,7 @@ def to_excel(df):
 def main():
     st.title("Programa de Mantenimiento Preventivo")
 
-    data, file_path = load_data()
+    data = load_data()
 
     if data.empty:
         st.error("No se pudieron cargar los datos.")
@@ -72,12 +73,10 @@ def main():
     # Mostrar los datos filtrados con las columnas seleccionadas
     st.write(data)
 
-    # Mostrar la fecha y hora de la última actualización del archivo
-    if file_path:
-        st.write(f"Usando el archivo: {file_path}")  # Mensaje de depuración
-        last_modified_time = os.path.getmtime(file_path)
-        last_modified_datetime = datetime.fromtimestamp(last_modified_time).strftime('%d/%m/%Y %H:%M:%S')
-        st.write(f"Última actualización del archivo: {last_modified_datetime}")
+    # Mostrar fecha y hora de la última actualización
+    st.write(f"Usando el archivo: {file_path}")
+    file_stats = os.stat(file_path)
+    st.write(f"Última actualización del archivo: {pd.to_datetime(file_stats.st_mtime, unit='s').strftime('%d/%m/%Y %H:%M:%S')}")
 
     # Opción para descargar el archivo filtrado
     st.sidebar.header('Descargar Datos')
