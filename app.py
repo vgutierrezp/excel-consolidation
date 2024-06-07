@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-import os
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
-    file_url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
+    url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
     try:
-        data = pd.read_excel(file_url)
+        data = pd.read_excel(url)
         return data
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
@@ -35,30 +34,23 @@ def main():
     st.sidebar.header('Filtros')
 
     # Inicializar filtros con listas ordenadas
-    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    
-    # Separar meses válidos y no válidos
-    unique_months = data['Mes'].dropna().unique()
-    valid_months = [month for month in unique_months if month in month_order]
-    invalid_months = [month for month in unique_months if month not in month_order]
-    
-    # Ordenar los meses válidos y agregar los no válidos al final
-    months = sorted(valid_months, key=lambda x: month_order.index(x)) + sorted(invalid_months)
+    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
+    months = sorted(data['Mes'].dropna().unique(), key=lambda x: month_order.index(x) if x in month_order else len(month_order))
     brands = sorted(data['Marca'].dropna().unique())
     stores = sorted(data['Tienda'].dropna().unique())
     families = sorted(data['Familia'].dropna().unique())
 
     # Crear filtros dependientes
-    selected_month = st.sidebar.selectbox('Mes', options=[''] + months, key='mes')
+    selected_month = st.sidebar.selectbox('Mes', options=[''] + months)
     filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
 
-    selected_brand = st.sidebar.selectbox('Marca', options=[''] + sorted(filtered_data['Marca'].dropna().unique()), key='marca')
+    selected_brand = st.sidebar.selectbox('Marca', options=[''] + sorted(filtered_data['Marca'].dropna().unique()))
     filtered_data = filtered_data if selected_brand == '' else filtered_data[filtered_data['Marca'] == selected_brand]
 
-    selected_store = st.sidebar.selectbox('Tienda', options=[''] + sorted(filtered_data['Tienda'].dropna().unique()), key='tienda')
+    selected_store = st.sidebar.selectbox('Tienda', options=[''] + sorted(filtered_data['Tienda'].dropna().unique()))
     filtered_data = filtered_data if selected_store == '' else filtered_data[filtered_data['Tienda'] == selected_store]
 
-    selected_family = st.sidebar.selectbox('Familia', options=[''] + sorted(filtered_data['Familia'].dropna().unique()), key='familia')
+    selected_family = st.sidebar.selectbox('Familia', options=[''] + sorted(filtered_data['Familia'].dropna().unique()))
     filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
 
     # Columnas a mostrar
@@ -72,7 +64,7 @@ def main():
         data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
-    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order + invalid_months, ordered=True)
+    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
     data = data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
 
     # Mostrar los datos filtrados con las columnas seleccionadas
