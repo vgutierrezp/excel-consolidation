@@ -1,96 +1,45 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
-import os
 
-# Cargar el archivo consolidado desde el repositorio
-@st.cache_data
-def load_data():
-    file_path = 'C:/Users/vgutierrez/chatbot_project/consolidated_file.xlsx'  # Ruta confirmada
-    st.write(f"Usando el archivo: {file_path}")
-    try:
-        data = pd.read_excel(file_path)
-        return data
-    except Exception as e:
-        st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame()
+# URL del archivo en el repositorio de GitHub
+url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
 
-# Función para convertir el DataFrame a Excel
-def to_excel(df):
+# Cargar los datos desde la URL
+data = pd.read_excel(url)
+
+# Función para ordenar los meses
+def ordenar_meses(df, columna):
+    meses_ordenados = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
+    df[columna] = pd.Categorical(df[columna], categories=meses_ordenados, ordered=True)
+    return df
+
+# Ordenar los meses en la columna 'Mes'
+data = ordenar_meses(data, 'Mes')
+
+# Título de la aplicación
+st.title('Programa de Mantenimiento Preventivo')
+st.write(f'Usando el archivo: {url}')
+
+# Sidebar para filtros
+st.sidebar.header('Filtros')
+mes = st.sidebar.selectbox('Mes', sorted(data['Mes'].unique(), key=lambda x: ('ENERO FEBRERO MARZO ABRIL MAYO JUNIO JULIO AGOSTO SEPTIEMBRE OCTUBRE NOVIEMBRE DICIEMBRE'.index(x))))
+marca = st.sidebar.selectbox('Marca', sorted(data['Marca'].unique()))
+tienda = st.sidebar.selectbox('Tienda', sorted(data['Tienda'].unique()))
+familia = st.sidebar.selectbox('Familia', sorted(data['Familia'].unique()))
+
+# Aplicar filtros
+filtered_data = data[(data['Mes'] == mes) & (data['Marca'] == marca) & (data['Tienda'] == tienda) & (data['Familia'] == familia)]
+
+# Mostrar los datos filtrados
+st.write(filtered_data)
+
+# Botón para descargar los datos filtrados
+def convertir_a_excel(df):
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.save()
     processed_data = output.getvalue()
     return processed_data
 
-# Función principal
-def main():
-    st.title("Programa de Mantenimiento Preventivo")
-
-    data = load_data()
-
-    if data.empty:
-        st.error("No se pudieron cargar los datos.")
-        return
-
-    # Filtrado por columnas específicas
-    st.sidebar.header('Filtros')
-
-    # Inicializar filtros con listas ordenadas
-    months = sorted([''] + list(data['Mes'].dropna().unique()))
-    brands = sorted([''] + list(data['Marca'].dropna().unique()))
-    stores = sorted([''] + list(data['Tienda'].dropna().unique()))
-    families = sorted([''] + list(data['Familia'].dropna().unique()))
-
-    # Crear filtros dependientes
-    selected_month = st.sidebar.selectbox('Mes', options=months)
-    filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
-
-    selected_brand = st.sidebar.selectbox('Marca', options=sorted([''] + list(filtered_data['Marca'].dropna().unique())))
-    filtered_data = filtered_data if selected_brand == '' else filtered_data[filtered_data['Marca'] == selected_brand]
-
-    selected_store = st.sidebar.selectbox('Tienda', options=sorted([''] + list(filtered_data['Tienda'].dropna().unique())))
-    filtered_data = filtered_data if selected_store == '' else filtered_data[filtered_data['Tienda'] == selected_store]
-
-    selected_family = st.sidebar.selectbox('Familia', options=sorted([''] + list(filtered_data['Familia'].dropna().unique())))
-    filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
-
-    # Columnas a mostrar
-    columns_to_show = ['Mes', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 
-                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    data = filtered_data[columns_to_show]
-
-    # Formatear las columnas de fecha
-    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
-
-    # Ordenar los meses según el calendario y luego por Familia
-    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
-    data = data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
-
-    # Mostrar los datos filtrados con las columnas seleccionadas
-    st.write(data)
-
-    # Mostrar fecha y hora de la última actualización
-    st.write(f"Usando el archivo: {file_path}")
-    if os.path.exists(file_path):
-        file_stats = os.stat(file_path)
-        st.write(f"Última actualización del archivo: {pd.to_datetime(file_stats.st_mtime, unit='s').strftime('%d/%m/%Y %H:%M:%S')}")
-    else:
-        st.error(f"El archivo {file_path} no existe.")
-
-    # Opción para descargar el archivo filtrado
-    st.sidebar.header('Descargar Datos')
-    if not data.empty:
-        excel_data = to_excel(data)
-        st.sidebar.download_button(
-            label='Descargar Excel',
-            data=excel_data,
-            file_name='filtered_data.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-
-if __name__ == "__main__":
-    main()
+st.download_button(label='Descargar Excel', data=convertir_a_excel(filtered_data), file_name='filtered_data.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
