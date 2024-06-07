@@ -3,6 +3,7 @@ import pandas as pd
 from io import BytesIO
 import os
 from datetime import datetime
+import requests
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
@@ -21,6 +22,19 @@ def to_excel(df):
         df.to_excel(writer, index=False, sheet_name='Sheet1')
     processed_data = output.getvalue()
     return processed_data
+
+# Función para obtener la fecha y hora de la última actualización del archivo en GitHub
+def get_last_modified(url):
+    try:
+        response = requests.head(url)
+        if 'Last-Modified' in response.headers:
+            last_modified_str = response.headers['Last-Modified']
+            last_modified_dt = datetime.strptime(last_modified_str, '%a, %d %b %Y %H:%M:%S %Z')
+            return last_modified_dt.strftime('%d/%m/%Y %H:%M:%S')
+        else:
+            return "Fecha de actualización no disponible"
+    except Exception as e:
+        return f"Error al obtener la fecha de actualización: {e}"
 
 # Función principal
 def main():
@@ -74,7 +88,8 @@ def main():
 
     # Mostrar la fecha y hora de la última actualización del archivo
     if file_path:
-        st.write(f"Usando el archivo: {file_path}")  # Mensaje de depuración
+        last_modified = get_last_modified(file_path)
+        st.write(f"Última actualización del archivo: {last_modified}")
 
     # Opción para descargar el archivo filtrado
     st.sidebar.header('Descargar Datos')
