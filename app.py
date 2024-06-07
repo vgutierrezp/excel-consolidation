@@ -2,18 +2,16 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import os
-from datetime import datetime
-import requests
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
-    url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
+    file_url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
     try:
-        data = pd.read_excel(url)
-        return data, url
+        data = pd.read_excel(file_url)
+        return data
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame(), None
+        return pd.DataFrame()
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -23,24 +21,11 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-# Función para obtener la fecha y hora de la última actualización del archivo en GitHub
-def get_last_modified(url):
-    try:
-        response = requests.head(url)
-        if 'Last-Modified' in response.headers:
-            last_modified_str = response.headers['Last-Modified']
-            last_modified_dt = datetime.strptime(last_modified_str, '%a, %d %b %Y %H:%M:%S %Z')
-            return last_modified_dt.strftime('%d/%m/%Y %H:%M:%S')
-        else:
-            return "Fecha de actualización no disponible"
-    except Exception as e:
-        return f"Error al obtener la fecha de actualización: {e}"
-
 # Función principal
 def main():
     st.title("Programa de Mantenimiento Preventivo")
 
-    data, file_path = load_data()
+    data = load_data()
 
     if data.empty:
         st.error("No se pudieron cargar los datos.")
@@ -51,22 +36,22 @@ def main():
 
     # Inicializar filtros con listas ordenadas
     month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    months = [''] + month_order  # Asegurar que la lista de meses siga el orden correcto
-    brands = sorted([''] + list(data['Marca'].dropna().unique()))
-    stores = sorted([''] + list(data['Tienda'].dropna().unique()))
-    families = sorted([''] + list(data['Familia'].dropna().unique()))
+    months = sorted(data['Mes'].dropna().unique(), key=lambda x: month_order.index(x))
+    brands = sorted(data['Marca'].dropna().unique())
+    stores = sorted(data['Tienda'].dropna().unique())
+    families = sorted(data['Familia'].dropna().unique())
 
     # Crear filtros dependientes
-    selected_month = st.sidebar.selectbox('Mes', options=months)
+    selected_month = st.sidebar.selectbox('Mes', options=[''] + months, key='mes')
     filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
 
-    selected_brand = st.sidebar.selectbox('Marca', options=sorted([''] + list(filtered_data['Marca'].dropna().unique())))
+    selected_brand = st.sidebar.selectbox('Marca', options=[''] + sorted(filtered_data['Marca'].dropna().unique()), key='marca')
     filtered_data = filtered_data if selected_brand == '' else filtered_data[filtered_data['Marca'] == selected_brand]
 
-    selected_store = st.sidebar.selectbox('Tienda', options=sorted([''] + list(filtered_data['Tienda'].dropna().unique())))
+    selected_store = st.sidebar.selectbox('Tienda', options=[''] + sorted(filtered_data['Tienda'].dropna().unique()), key='tienda')
     filtered_data = filtered_data if selected_store == '' else filtered_data[filtered_data['Tienda'] == selected_store]
 
-    selected_family = st.sidebar.selectbox('Familia', options=sorted([''] + list(filtered_data['Familia'].dropna().unique())))
+    selected_family = st.sidebar.selectbox('Familia', options=[''] + sorted(filtered_data['Familia'].dropna().unique()), key='familia')
     filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
 
     # Columnas a mostrar
@@ -85,11 +70,6 @@ def main():
 
     # Mostrar los datos filtrados con las columnas seleccionadas
     st.write(data)
-
-    # Mostrar la fecha y hora de la última actualización del archivo
-    if file_path:
-        last_modified = get_last_modified(file_path)
-        st.write(f"Última actualización del archivo: {last_modified}")
 
     # Opción para descargar el archivo filtrado
     st.sidebar.header('Descargar Datos')
