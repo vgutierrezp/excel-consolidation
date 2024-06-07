@@ -19,14 +19,14 @@ data = ordenar_meses(data, 'Mes')
 
 # Título de la aplicación
 st.title('Programa de Mantenimiento Preventivo')
-st.write(f'Usando el archivo: {url}')
+st.write(f'Usando el archivo: [consolidated_file.xlsx]({url})')
 
 # Sidebar para filtros
 st.sidebar.header('Filtros')
 mes = st.sidebar.selectbox('Mes', data['Mes'].cat.categories)
-marca = st.sidebar.selectbox('Marca', sorted(data['Marca'].unique()))
-tienda = st.sidebar.selectbox('Tienda', sorted(data['Tienda'].unique()))
-familia = st.sidebar.selectbox('Familia', sorted(data['Familia'].unique()))
+marca = st.sidebar.selectbox('Marca', sorted(data['Marca'].dropna().unique()))
+tienda = st.sidebar.selectbox('Tienda', sorted(data['Tienda'].dropna().unique()))
+familia = st.sidebar.selectbox('Familia', sorted(data['Familia'].dropna().unique()))
 
 # Aplicar filtros
 filtered_data = data[(data['Mes'] == mes) & (data['Marca'] == marca) & (data['Tienda'] == tienda) & (data['Familia'] == familia)]
