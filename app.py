@@ -6,7 +6,7 @@ import os
 # Cargar el archivo consolidado desde el repositorio
 @st.cache_data
 def load_data():
-    file_path = 'consolidated_file.xlsx'
+    file_path = 'C:/Users/vgutierrez/chatbot_project/consolidated_file.xlsx'  # Ruta confirmada
     st.write(f"Usando el archivo: {file_path}")
     try:
         data = pd.read_excel(file_path)
