@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
 
 # URL del archivo en el repositorio de GitHub
 url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
@@ -22,7 +23,7 @@ st.write(f'Usando el archivo: {url}')
 
 # Sidebar para filtros
 st.sidebar.header('Filtros')
-mes = st.sidebar.selectbox('Mes', sorted(data['Mes'].unique(), key=lambda x: ('ENERO FEBRERO MARZO ABRIL MAYO JUNIO JULIO AGOSTO SEPTIEMBRE OCTUBRE NOVIEMBRE DICIEMBRE'.index(x))))
+mes = st.sidebar.selectbox('Mes', data['Mes'].cat.categories)
 marca = st.sidebar.selectbox('Marca', sorted(data['Marca'].unique()))
 tienda = st.sidebar.selectbox('Tienda', sorted(data['Tienda'].unique()))
 familia = st.sidebar.selectbox('Familia', sorted(data['Familia'].unique()))
