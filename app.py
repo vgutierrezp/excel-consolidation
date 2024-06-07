@@ -51,7 +51,7 @@ def main():
 
     # Inicializar filtros con listas ordenadas
     month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    months = sorted([''] + list(data['Mes'].dropna().unique()), key=lambda x: month_order.index(x) if x in month_order else -1)
+    months = [''] + month_order  # Asegurar que la lista de meses siga el orden correcto
     brands = sorted([''] + list(data['Marca'].dropna().unique()))
     stores = sorted([''] + list(data['Tienda'].dropna().unique()))
     families = sorted([''] + list(data['Familia'].dropna().unique()))
