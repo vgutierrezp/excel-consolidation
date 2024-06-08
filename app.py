@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-import os
 from datetime import datetime, timedelta
 
 # Cargar el archivo consolidado desde el repositorio
@@ -32,7 +31,7 @@ def generate_excel_with_dates(df, store_name):
 
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
-        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%y')
+        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
         col_num = 1
         while current_date <= max_date:
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
@@ -46,6 +45,24 @@ def generate_excel_with_dates(df, store_name):
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
     processed_data = output.getvalue()
     return processed_data
+
+# Función para obtener la fecha más reciente de "Ejec.1" para cada servicio único
+def get_most_recent_services(data, selected_month, selected_store):
+    data['Unique_Service'] = data['Familia'] + data['Tipo de Equipo'] + data['Tipo de Servicio'] + data['Ejecutor'] + data['Frecuencia'].astype(str)
+    data['Ejec.1'] = pd.to_datetime(data['Ejec.1'], errors='coerce')
+
+    previous_services = data[(data['Mes'] != selected_month) & (data['Tienda'] == selected_store)]
+    most_recent_services = previous_services.loc[previous_services.groupby('Unique_Service')['Ejec.1'].idxmax()]
+
+    current_month_services = data[(data['Mes'] == selected_month) & (data['Tienda'] == selected_store)]
+
+    combined_services = pd.concat([most_recent_services, current_month_services])
+    combined_services = combined_services.drop_duplicates(subset=['Unique_Service'], keep='last')
+    
+    # Actualizar 'Ult. Prev.' con la fecha de 'Ejec.1' más reciente
+    combined_services['Ult. Prev.'] = combined_services['Ejec.1'].dt.strftime('%d/%m/%Y')
+    
+    return combined_services
 
 # Función principal
 def main():
@@ -108,17 +125,19 @@ def main():
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
-    # Botón para generar el Excel con fechas calculadas y descargarlo
+    # Botón para generar el Excel con fechas calculadas
     if selected_store:
-        planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
-        st.sidebar.download_button(
-            label='Programa Anual de Mantenimiento',
-            data=planned_excel_data,
-            file_name='programa_anual_mantenimiento.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+        if st.sidebar.button('Programa Anual de Mantenimiento'):
+            combined_services = get_most_recent_services(data, selected_month, selected_store)
+            planned_excel_data = generate_excel_with_dates(combined_services, selected_store)
+            st.sidebar.download_button(
+                label='Descargar Programa Anual',
+                data=planned_excel_data,
+                file_name='programa_anual_mantenimiento.xlsx',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
     else:
-        st.sidebar.error("Por favor, seleccione una tienda.")
+        st.sidebar.warning("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
     main()
