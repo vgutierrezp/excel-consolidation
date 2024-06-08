@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
-    file_path = 'consolidated_file.xlsx'
+    url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
     try:
-        data = pd.read_excel(file_path)
-        return data, file_path
+        data = pd.read_excel(url)
+        return data
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame(), None
+        return pd.DataFrame()
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -23,7 +23,7 @@ def to_excel(df):
     return processed_data
 
 # Función para generar el Excel con las fechas calculadas
-def generate_excel_with_dates(df):
+def generate_excel_with_dates(df, store_name):
     output = BytesIO()
     columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
@@ -40,7 +40,10 @@ def generate_excel_with_dates(df):
             col_num += 1
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        new_df.to_excel(writer, index=False, sheet_name='Fechas Planificadas')
+        worksheet_name = 'Fechas Planificadas'
+        new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
+        worksheet = writer.sheets[worksheet_name]
+        worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
     processed_data = output.getvalue()
     return processed_data
 
@@ -48,7 +51,7 @@ def generate_excel_with_dates(df):
 def main():
     st.title("Programa de Mantenimiento Preventivo")
 
-    data, file_path = load_data()
+    data = load_data()
 
     if data.empty:
         st.error("No se pudieron cargar los datos.")
@@ -105,15 +108,17 @@ def main():
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
-    # Botón para generar el Excel con fechas calculadas
-    if st.sidebar.button('Programa Anual de Mantenimiento'):
-        planned_excel_data = generate_excel_with_dates(filtered_data)
+    # Botón para generar el Excel con fechas calculadas y descargarlo
+    if selected_store:
+        planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
         st.sidebar.download_button(
-            label='Descargar Programa Anual',
+            label='Programa Anual de Mantenimiento',
             data=planned_excel_data,
             file_name='programa_anual_mantenimiento.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
+    else:
+        st.sidebar.error("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
     main()
