@@ -32,12 +32,12 @@ def generate_excel_with_dates(df):
 
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
-        current_date = row['Ult. Prev.']
-        col_name = 'Fecha Planificada'
+        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%y')
+        col_num = 1
         while current_date <= max_date:
-            new_df.loc[index, col_name] = current_date.strftime('%d/%m/%Y')
+            new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
-            col_name = (datetime.strptime(col_name.split()[-1], '%d/%m/%Y') + timedelta(days=freq)).strftime('Fecha Planificada %d/%m/%Y')
+            col_num += 1
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         new_df.to_excel(writer, index=False, sheet_name='Fechas Planificadas')
@@ -106,12 +106,12 @@ def main():
         )
 
     # Botón para generar el Excel con fechas calculadas
-    if st.sidebar.button('Generar Excel con Fechas Planificadas'):
+    if st.sidebar.button('Programa Anual de Mantenimiento'):
         planned_excel_data = generate_excel_with_dates(filtered_data)
         st.sidebar.download_button(
-            label='Descargar Excel con Fechas Planificadas',
+            label='Descargar Programa Anual',
             data=planned_excel_data,
-            file_name='planned_dates.xlsx',
+            file_name='programa_anual_mantenimiento.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
