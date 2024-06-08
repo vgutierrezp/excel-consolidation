@@ -34,7 +34,7 @@ def generate_excel_with_dates(df, store_name):
         current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
         col_num = 1
         while current_date <= max_date:
-            new_df.loc[index, f'Prog.{col_num}'] = f"=DATE(YEAR(H{index+3}),MONTH(H{index+3})+{freq//30},DAY(H{index+3}))"
+            new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
             col_num += 1
 
@@ -43,8 +43,6 @@ def generate_excel_with_dates(df, store_name):
     new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
     new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
-    new_df = new_df.loc[:, (new_df != '').any(axis=0)]
-
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
         new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
@@ -52,10 +50,7 @@ def generate_excel_with_dates(df, store_name):
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
-        date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
-        for col_num, col_name in enumerate(new_df.columns):
-            if 'Prog.' in col_name or col_name == 'Ult. Prev.':
-                worksheet.set_column(col_num, col_num, None, date_format)
+        worksheet.set_column('H:H', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
     processed_data = output.getvalue()
     return processed_data
 
