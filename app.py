@@ -34,11 +34,8 @@ def generate_excel_with_dates(df, store_name):
         current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
         col_num = 1
         while current_date <= max_date:
-            next_date = current_date + timedelta(days=freq)
-            if next_date <= max_date:
-                col_name = f'Prog.{col_num}'
-                new_df.loc[index, col_name] = f"=DATE({current_date.year},{current_date.month},{current_date.day})+{freq}"
-            current_date = next_date
+            new_df.loc[index, f'Prog.{col_num}'] = f"=DATE(YEAR(H{index+3}),MONTH(H{index+3})+{freq//30},DAY(H{index+3}))"
+            current_date += timedelta(days=freq)
             col_num += 1
 
     new_df = new_df.dropna(subset=['Ult. Prev.'])
@@ -46,9 +43,7 @@ def generate_excel_with_dates(df, store_name):
     new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
     new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
-    # Eliminar columnas Prog. vacías
-    prog_cols = [col for col in new_df.columns if col.startswith('Prog.')]
-    new_df = new_df.dropna(axis=1, how='all', subset=prog_cols)
+    new_df = new_df.loc[:, (new_df != '').any(axis=0)]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
@@ -56,11 +51,10 @@ def generate_excel_with_dates(df, store_name):
         worksheet = writer.sheets[worksheet_name]
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
-        date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
         worksheet.set_row(0, None, bold)
-        worksheet.set_column('H:H', None, date_format)
-        for col_num, value in enumerate(new_df.columns):
-            if 'Prog.' in value:
+        date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
+        for col_num, col_name in enumerate(new_df.columns):
+            if 'Prog.' in col_name or col_name == 'Ult. Prev.':
                 worksheet.set_column(col_num, col_num, None, date_format)
     processed_data = output.getvalue()
     return processed_data
