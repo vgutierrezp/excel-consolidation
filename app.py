@@ -1,16 +1,18 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import os
+from datetime import datetime, timedelta
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
-    url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
+    file_path = 'consolidated_file.xlsx'
     try:
-        data = pd.read_excel(url)
-        return data
+        data = pd.read_excel(file_path)
+        return data, file_path
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(), None
 
 # Función para convertir el DataFrame a Excel
 def to_excel(df):
@@ -20,11 +22,33 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
+# Función para generar el Excel con las fechas calculadas
+def generate_excel_with_dates(df):
+    output = BytesIO()
+    columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
+
+    new_df = df[columns_to_copy].copy()
+    max_date = datetime(2024, 12, 31)
+
+    for index, row in new_df.iterrows():
+        freq = row['Frecuencia']
+        current_date = row['Ult. Prev.']
+        col_name = 'Fecha Planificada'
+        while current_date <= max_date:
+            new_df.loc[index, col_name] = current_date.strftime('%d/%m/%Y')
+            current_date += timedelta(days=freq)
+            col_name = (datetime.strptime(col_name.split()[-1], '%d/%m/%Y') + timedelta(days=freq)).strftime('Fecha Planificada %d/%m/%Y')
+
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        new_df.to_excel(writer, index=False, sheet_name='Fechas Planificadas')
+    processed_data = output.getvalue()
+    return processed_data
+
 # Función principal
 def main():
     st.title("Programa de Mantenimiento Preventivo")
 
-    data = load_data()
+    data, file_path = load_data()
 
     if data.empty:
         st.error("No se pudieron cargar los datos.")
@@ -35,10 +59,10 @@ def main():
 
     # Inicializar filtros con listas ordenadas
     month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    months = sorted(data['Mes'].dropna().unique(), key=lambda x: month_order.index(x) if x in month_order else len(month_order))
-    brands = sorted(data['Marca'].dropna().unique())
-    stores = sorted(data['Tienda'].dropna().unique())
-    families = sorted(data['Familia'].dropna().unique())
+    months = sorted(data['Mes'].dropna().unique(), key=lambda x: (month_order.index(x) if x in month_order else float('inf')))
+    brands = sorted([''] + list(data['Marca'].dropna().unique()))
+    stores = sorted([''] + list(data['Tienda'].dropna().unique()))
+    families = sorted([''] + list(data['Familia'].dropna().unique()))
 
     # Crear filtros dependientes
     selected_month = st.sidebar.selectbox('Mes', options=[''] + months)
@@ -78,6 +102,16 @@ def main():
             label='Descargar Excel',
             data=excel_data,
             file_name='filtered_data.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    # Botón para generar el Excel con fechas calculadas
+    if st.sidebar.button('Generar Excel con Fechas Planificadas'):
+        planned_excel_data = generate_excel_with_dates(filtered_data)
+        st.sidebar.download_button(
+            label='Descargar Excel con Fechas Planificadas',
+            data=planned_excel_data,
+            file_name='planned_dates.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
