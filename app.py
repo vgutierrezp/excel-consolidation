@@ -79,6 +79,10 @@ def main():
         st.error("La columna 'Marca' no existe en los datos.")
         return
     
+    # Verificar los datos de la columna 'Marca'
+    st.write(f"Primeras filas de la columna 'Marca': {data['Marca'].head()}")
+    st.write(f"Tipos de datos en la columna 'Marca': {data['Marca'].apply(type).unique()}")
+    
     brands = sorted([''] + list(data['Marca'].dropna().unique()))
     st.write(f"Marcas: {brands}")
     
