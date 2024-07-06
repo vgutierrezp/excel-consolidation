@@ -74,8 +74,14 @@ def main():
     month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
     months = sorted(data['Mes'].dropna().unique(), key=lambda x: (month_order.index(x) if x in month_order else float('inf')))
     st.write(f"Meses: {months}")
+    
+    if 'Marca' not in data.columns:
+        st.error("La columna 'Marca' no existe en los datos.")
+        return
+    
     brands = sorted([''] + list(data['Marca'].dropna().unique()))
     st.write(f"Marcas: {brands}")
+    
     stores = sorted([''] + list(data['Tienda'].dropna().unique()))
     st.write(f"Tiendas: {stores}")
     families = sorted([''] + list(data['Familia'].dropna().unique()))
