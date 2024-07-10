@@ -1,77 +1,154 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
+from datetime import datetime, timedelta
 import os
 
-def main():
-    st.title('Consolidación de Archivos Excel')
-
-    # Ruta del archivo Excel
+# Cargar el archivo consolidado desde el repositorio
+def load_data():
     data_file = 'consolidated_file.xlsx'
-
-    # Verificar si el archivo existe
     if not os.path.exists(data_file):
         st.error(f"El archivo {data_file} no existe. Por favor, verifica la ruta y el nombre del archivo.")
-        return
-
+        return pd.DataFrame()
     try:
-        # Cargar los datos desde el archivo Excel
         data = pd.read_excel(data_file)
+        return data
     except Exception as e:
-        st.error(f"Error al leer el archivo Excel: {str(e)}")
+        st.error(f"Error al cargar los datos: {e}")
+        return pd.DataFrame()
+
+# Función para convertir el DataFrame a Excel
+def to_excel(df):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    processed_data = output.getvalue()
+    return processed_data
+
+# Función para generar el Excel con las fechas calculadas
+def generate_excel_with_dates(df, store_name):
+    output = BytesIO()
+    columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
+
+    new_df = df[columns_to_copy].copy()
+    max_date = datetime(2024, 12, 31)
+
+    for index, row in new_df.iterrows():
+        freq = row['Frecuencia']
+        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
+        col_num = 1
+        while current_date <= max_date:
+            new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
+            current_date += timedelta(days=freq)
+            col_num += 1
+
+    new_df = new_df.dropna(subset=['Ult. Prev.'])
+    new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
+    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
+    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
+
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        worksheet_name = 'Fechas Planificadas'
+        new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
+        worksheet = writer.sheets[worksheet_name]
+        worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
+        bold = writer.book.add_format({'bold': True})
+        worksheet.set_row(0, None, bold)
+        worksheet.set_column('H:H', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
+    processed_data = output.getvalue()
+    return processed_data
+
+# Función principal
+def main():
+    st.title("Programa de Mantenimiento Preventivo")
+
+    data = load_data()
+
+    if data.empty:
+        st.error("No se pudieron cargar los datos.")
         return
 
-    # Ordenar los meses cronológicamente
-    months_order = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
-    data['Mes'] = pd.Categorical(data['Mes'], categories=months_order, ordered=True)
-
-    # Definir los filtros
+    # Filtrado por columnas específicas
     st.sidebar.header('Filtros')
+
+    # Inicializar filtros con listas ordenadas
+    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
+    months = sorted(data['Mes'].dropna().unique(), key=lambda x: (month_order.index(x) if x in month_order else float('inf')))
+    brands = sorted([''] + list(data['Marca'].dropna().unique()))
+    stores = sorted([''] + list(data['Tienda'].dropna().unique()))
+    families = sorted([''] + list(data['Familia'].dropna().unique()))
 
     # Botón para limpiar los filtros
     if st.sidebar.button('Limpiar Filtros'):
-        st.session_state.mes = ''
-        st.session_state.marca = ''
-        st.session_state.tienda = ''
-        st.session_state.familia = ''
+        st.session_state['mes'] = ''
+        st.session_state['marca'] = ''
+        st.session_state['tienda'] = ''
+        st.session_state['familia'] = ''
 
-    # Definir los valores iniciales de los filtros
-    mes = st.sidebar.selectbox('Mes', [''] + months_order, key='mes')
-    marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique().tolist()), key='marca')
-    tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique().tolist()), key='tienda')
-    familia = st.sidebar.selectbox('Familia', [''] + sorted(data['Familia'].dropna().unique().tolist()), key='familia')
+    # Crear filtros dependientes
+    selected_month = st.sidebar.selectbox('Mes', options=[''] + months, key='mes')
+    filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
 
-    # Aplicar los filtros a los datos
-    filtered_data = data.copy()
-    if mes:
-        filtered_data = filtered_data[filtered_data['Mes'] == mes]
-    if marca:
-        filtered_data = filtered_data[filtered_data['Marca'] == marca]
-    if tienda:
-        filtered_data = filtered_data[filtered_data['Tienda'] == tienda]
-    if familia:
-        filtered_data = filtered_data[filtered_data['Familia'] == familia]
+    selected_brand = st.sidebar.selectbox('Marca', options=[''] + sorted(filtered_data['Marca'].dropna().unique()), key='marca')
+    filtered_data = filtered_data if selected_brand == '' else filtered_data[filtered_data['Marca'] == selected_brand]
 
-    # Mostrar la tabla filtrada
-    st.dataframe(filtered_data)
+    selected_store = st.sidebar.selectbox('Tienda', options=[''] + sorted(filtered_data['Tienda'].dropna().unique()), key='tienda')
+    filtered_data = filtered_data if selected_store == '' else filtered_data[filtered_data['Tienda'] == selected_store]
 
-    # Botón para descargar el archivo filtrado en Excel
+    selected_family = st.sidebar.selectbox('Familia', options=[''] + sorted(filtered_data['Familia'].dropna().unique()), key='familia')
+    filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
+
+    # Columnas a mostrar
+    columns_to_show = ['Mes', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 
+                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
+    data = filtered_data[columns_to_show]
+
+    # Formatear las columnas de fecha
+    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
+    for col in date_columns:
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
+
+    # Ordenar los meses según el calendario y luego por Familia
+    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
+    data = data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
+
+    # Mostrar los datos filtrados con las columnas seleccionadas
+    st.write(data)
+
+    # Opción para descargar el archivo filtrado
     st.sidebar.header('Descargar Datos')
-    if st.sidebar.button('Descargar Excel'):
-        filtered_data.to_excel('filtered_data.xlsx', index=False)
-        st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
+    if not data.empty:
+        excel_data = to_excel(data)
+        st.sidebar.download_button(
+            label='Descargar Excel',
+            data=excel_data,
+            file_name='filtered_data.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
 
-    # Botón para descargar el plan preventivo
-    if st.sidebar.button('Descargar Plan Preventivo'):
-        st.sidebar.markdown(f'[Descargar Plan Preventivo](path/to/plan_preventivo.xlsx)')
+    # Botón para generar el Excel con fechas calculadas
+    if selected_store:
+        if st.sidebar.button('Programa Anual de Mantenimiento'):
+            if selected_month or selected_brand or selected_family:
+                st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
+            else:
+                planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
+                st.sidebar.download_button(
+                    label='Descargar Programa Anual',
+                    data=planned_excel_data,
+                    file_name='programa_anual_mantenimiento.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+    else:
+        st.sidebar.warning("Por favor, seleccione una tienda.")
 
-# Ejecutar la aplicación
 if __name__ == "__main__":
     if 'mes' not in st.session_state:
-        st.session_state.mes = ''
+        st.session_state['mes'] = ''
     if 'marca' not in st.session_state:
-        st.session_state.marca = ''
+        st.session_state['marca'] = ''
     if 'tienda' not in st.session_state:
-        st.session_state.tienda = ''
+        st.session_state['tienda'] = ''
     if 'familia' not in st.session_state:
-        st.session_state.familia = ''
+        st.session_state['familia'] = ''
     main()
