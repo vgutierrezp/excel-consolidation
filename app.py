@@ -33,18 +33,20 @@ def generate_excel_with_dates(df, store_name):
     new_df = df[columns_to_copy].copy()
     max_date = datetime(2024, 12, 31)
 
+    # Verificar y limpiar las fechas antes de procesarlas
+    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
+    new_df = new_df.dropna(subset=['Ult. Prev.'])  # Eliminar filas con fechas no válidas
+
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
-        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
+        current_date = row['Ult. Prev.']
         col_num = 1
         while current_date <= max_date:
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
             col_num += 1
 
-    new_df = new_df.dropna(subset=['Ult. Prev.'])
     new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
     new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
