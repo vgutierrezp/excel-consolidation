@@ -20,18 +20,22 @@ def main():
         st.error(f"Error al leer el archivo Excel: {str(e)}")
         return
 
+    # Ordenar los meses cronológicamente
+    months_order = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
+    data['Mes'] = pd.Categorical(data['Mes'], categories=months_order, ordered=True)
+
     # Definir los filtros
     st.sidebar.header('Filtros')
 
     # Botón para limpiar los filtros
     if st.sidebar.button('Limpiar Filtros'):
-        st.session_state['mes'] = ''
-        st.session_state['marca'] = ''
-        st.session_state['tienda'] = ''
-        st.session_state['familia'] = ''
+        st.session_state.mes = ''
+        st.session_state.marca = ''
+        st.session_state.tienda = ''
+        st.session_state.familia = ''
 
     # Definir los valores iniciales de los filtros
-    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique().tolist()), key='mes')
+    mes = st.sidebar.selectbox('Mes', [''] + months_order, key='mes')
     marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique().tolist()), key='marca')
     tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique().tolist()), key='tienda')
     familia = st.sidebar.selectbox('Familia', [''] + sorted(data['Familia'].dropna().unique().tolist()), key='familia')
@@ -56,14 +60,18 @@ def main():
         filtered_data.to_excel('filtered_data.xlsx', index=False)
         st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
 
+    # Botón para descargar el plan preventivo
+    if st.sidebar.button('Descargar Plan Preventivo'):
+        st.sidebar.markdown(f'[Descargar Plan Preventivo](path/to/plan_preventivo.xlsx)')
+
 # Ejecutar la aplicación
 if __name__ == "__main__":
     if 'mes' not in st.session_state:
-        st.session_state['mes'] = ''
+        st.session_state.mes = ''
     if 'marca' not in st.session_state:
-        st.session_state['marca'] = ''
+        st.session_state.marca = ''
     if 'tienda' not in st.session_state:
-        st.session_state['tienda'] = ''
+        st.session_state.tienda = ''
     if 'familia' not in st.session_state:
-        st.session_state['familia'] = ''
+        st.session_state.familia = ''
     main()
