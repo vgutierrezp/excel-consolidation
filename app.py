@@ -40,26 +40,23 @@ def generate_excel_with_dates(df, store_name):
     # Filtrar filas con fechas no válidas en 'Ejec.1'
     new_df = new_df.dropna(subset=['Ejec.1'])
 
-    # Ordenar las filas
-    new_df = new_df.sort_values(by=['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejec.1'], ascending=[True, True, True, False])
-
-    # Eliminar duplicados manteniendo las filas con la fecha más reciente en 'Ejec.1'
+    # Obtener la fecha más reciente del último preventivo realizado para cada servicio
     new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+    latest_preventives = new_df.loc[new_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
 
     # Calcular fechas programadas
-    for index, row in new_df.iterrows():
+    for index, row in latest_preventives.iterrows():
         freq = row['Frecuencia']
         current_date = row['Ejec.1']
         col_num = 1
         while current_date <= max_date:
-            new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
+            latest_preventives.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
             col_num += 1
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
-        new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
+        latest_preventives.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
         worksheet = writer.sheets[worksheet_name]
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
