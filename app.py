@@ -37,17 +37,17 @@ def generate_excel_with_dates(df, store_name):
     new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
     new_df['Ejec.1'] = pd.to_datetime(new_df['Ejec.1'], format='%d/%m/%Y', errors='coerce')
 
-    # Filtrar filas con fechas no válidas en 'Ejec.1'
-    new_df = new_df.dropna(subset=['Ejec.1'])
+    # Filtrar filas con fechas no válidas en 'Ult. Prev.'
+    new_df = new_df.dropna(subset=['Ult. Prev.'])
 
     # Obtener la fecha más reciente del último preventivo realizado para cada servicio
     new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    latest_preventives = new_df.loc[new_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+    latest_preventives = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     # Calcular fechas programadas
     for index, row in latest_preventives.iterrows():
         freq = row['Frecuencia']
-        current_date = row['Ejec.1']
+        current_date = row['Ult. Prev.']
         col_num = 1
         while current_date <= max_date:
             latest_preventives.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
@@ -117,7 +117,7 @@ def main():
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
-    data = data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
+    data = data.sort_values(by=['Mes', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ult. Prev.'], ascending=[True, True, True, True, False])
 
     # Mostrar los datos filtrados con las columnas seleccionadas
     st.write(data)
@@ -134,10 +134,8 @@ def main():
         )
 
     # Botón para generar el Excel con fechas calculadas
-    if st.sidebar.button('Programa Anual de Mantenimiento'):
-        if not selected_store or selected_month or selected_brand or selected_family:
-            st.sidebar.warning("Seleccione solo una tienda si desea su Plan Anual de Mantenimiento.")
-        else:
+    if selected_store:
+        if st.sidebar.button('Programa Anual de Mantenimiento'):
             planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
             st.sidebar.download_button(
                 label='Descargar Programa Anual',
@@ -145,8 +143,9 @@ def main():
                 file_name='programa_anual_mantenimiento.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
+    else:
+        st.sidebar.error("Selecciona una tienda si desea su Plan Anual de Mantenimiento")
 
-# Ejecutar la aplicación
 if __name__ == "__main__":
     if 'mes' not in st.session_state:
         st.session_state['mes'] = ''
