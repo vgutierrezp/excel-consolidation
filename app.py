@@ -137,18 +137,17 @@ def main():
         )
 
     # Botón para generar el Excel con fechas calculadas
-    if selected_store:
-        if st.sidebar.button('Programa Anual de Mantenimiento'):
-            if selected_month or selected_brand or selected_family:
-                st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
-            else:
-                planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
-                st.sidebar.download_button(
-                    label='Descargar Programa Anual',
-                    data=planned_excel_data,
-                    file_name='programa_anual_mantenimiento.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
+    if st.sidebar.button('Programa Anual de Mantenimiento'):
+        if not selected_store or selected_month or selected_brand or selected_family:
+            st.sidebar.warning("Seleccione solo una tienda si desea su Plan Anual de Mantenimiento.")
+        else:
+            planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
+            st.sidebar.download_button(
+                label='Descargar Programa Anual',
+                data=planned_excel_data,
+                file_name='programa_anual_mantenimiento.xlsx',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
 
 # Ejecutar la aplicación
 if __name__ == "__main__":
