@@ -28,26 +28,34 @@ def to_excel(df):
 # Función para generar el Excel con las fechas calculadas
 def generate_excel_with_dates(df, store_name):
     output = BytesIO()
-    columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
+    columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1']
 
     new_df = df[columns_to_copy].copy()
     max_date = datetime(2024, 12, 31)
 
-    # Verificar y limpiar las fechas antes de procesarlas
+    # Convertir fechas a datetime y manejar errores
     new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
-    new_df = new_df.dropna(subset=['Ult. Prev.'])  # Eliminar filas con fechas no válidas
+    new_df['Ejec.1'] = pd.to_datetime(new_df['Ejec.1'], format='%d/%m/%Y', errors='coerce')
 
+    # Filtrar filas con fechas no válidas en 'Ejec.1'
+    new_df = new_df.dropna(subset=['Ejec.1'])
+
+    # Ordenar las filas
+    new_df = new_df.sort_values(by=['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejec.1'], ascending=[True, True, True, False])
+
+    # Eliminar duplicados manteniendo las filas con la fecha más reciente en 'Ejec.1'
+    new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
+    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+
+    # Calcular fechas programadas
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
-        current_date = row['Ult. Prev.']
+        current_date = row['Ejec.1']
         col_num = 1
         while current_date <= max_date:
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
             col_num += 1
-
-    new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
@@ -141,9 +149,8 @@ def main():
                     file_name='programa_anual_mantenimiento.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
-    else:
-        st.sidebar.warning("Por favor, seleccione una tienda.")
 
+# Ejecutar la aplicación
 if __name__ == "__main__":
     if 'mes' not in st.session_state:
         st.session_state['mes'] = ''
