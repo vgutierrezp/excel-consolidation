@@ -30,6 +30,13 @@ def generate_excel_with_dates(df, store_name):
     output = BytesIO()
     columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
+    # Verificar que las columnas necesarias existen
+    required_columns = ['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ult. Prev.']
+    for col in required_columns:
+        if col not in df.columns:
+            st.error(f"La columna {col} no se encuentra en el DataFrame.")
+            return None
+
     # Filtrar y mantener solo la fila con la fecha más reciente en "Ult. Prev." para cada servicio único
     df['Ult. Prev.'] = pd.to_datetime(df['Ult. Prev.'], errors='coerce')
     df = df.loc[df.groupby(['Familia', 'Tipo de Equipo', 'Tipo de Servicio'])['Ult. Prev.'].idxmax()]
@@ -137,14 +144,15 @@ def main():
             else:
                 st.write(f"Generando el programa anual de mantenimiento para la tienda: {selected_store}")
                 planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
-                st.sidebar.download_button(
-                    label='Descargar Programa Anual',
-                    data=planned_excel_data,
-                    file_name='programa_anual_mantenimiento.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-    else:
-        st.sidebar.warning("Por favor, seleccione una tienda.")
+                if planned_excel_data:
+                    st.sidebar.download_button(
+                        label='Descargar Programa Anual',
+                        data=planned_excel_data,
+                        file_name='programa_anual_mantenimiento.xlsx',
+                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+                else:
+                    st.error("Error al generar el programa anual de mantenimiento. Por favor, verifique los datos.")
 
 if __name__ == "__main__":
     if 'mes' not in st.session_state:
