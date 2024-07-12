@@ -75,19 +75,8 @@ def main():
     if familia:
         filtered_data = filtered_data[filtered_data['Familia'] == familia]
 
-    # Convertir fechas a datetime y manejar errores
-    filtered_data['Ult. Prev.'] = pd.to_datetime(filtered_data['Ult. Prev.'], errors='coerce').fillna(pd.Timestamp.min)
-
-    # Ordenar datos por Familia, Ejecutor, y Ult. Prev.
-    filtered_data = filtered_data.sort_values(by=['Familia', 'Ejecutor', 'Ult. Prev.'])
-
-    # Columnas a mostrar
-    columns_to_show = ['Mes', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 
-                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    data_to_show = filtered_data[columns_to_show]
-
-    # Mostrar los datos filtrados con las columnas seleccionadas
-    st.write(data_to_show)
+    # Mostrar la tabla filtrada
+    st.dataframe(filtered_data)
 
     # Verificar si se seleccionó una tienda
     selected_store = st.sidebar.selectbox('Selecciona una tienda para el Plan Anual de Mantenimiento', options=[''] + data['Tienda'].dropna().unique().tolist())
