@@ -33,14 +33,16 @@ def generate_excel_with_dates(df, store_name):
     new_df = df[columns_to_copy].copy()
     max_date = datetime(2024, 12, 31)
 
-    # Verificar y limpiar las fechas antes de procesarlas
+    # Convertir 'Ult. Prev.' a formato de fecha
     new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
-    new_df = new_df.dropna(subset=['Ult. Prev.'])  # Eliminar filas con fechas no válidas
 
-    # Filtrar filas con la misma 'Llave1' manteniendo la más reciente 'Ult. Prev.'
-    new_df['Llave1'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df = new_df.loc[new_df.groupby('Llave1')['Ult. Prev.'].idxmax()]
+    # Ordenar por 'Ult. Prev.' ascendente y luego por 'Familia' alfabéticamente
+    new_df = new_df.sort_values(by=['Ult. Prev.', 'Familia'], ascending=[True, True])
 
+    # Eliminar duplicados, manteniendo la fila con la fecha más reciente en 'Ult. Prev.'
+    new_df = new_df.drop_duplicates(subset=['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia'], keep='last')
+
+    # Calcular las fechas programadas
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
         current_date = row['Ult. Prev.']
@@ -132,16 +134,13 @@ def main():
     # Botón para generar el Excel con fechas calculadas
     if selected_store:
         if st.sidebar.button('Programa Anual de Mantenimiento'):
-            if selected_month or selected_brand or selected_family:
-                st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
-            else:
-                planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
-                st.sidebar.download_button(
-                    label='Descargar Programa Anual',
-                    data=planned_excel_data,
-                    file_name='programa_anual_mantenimiento.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
+            planned_excel_data = generate_excel_with_dates(data, selected_store)
+            st.sidebar.download_button(
+                label='Descargar Programa Anual',
+                data=planned_excel_data,
+                file_name='programa_anual_mantenimiento.xlsx',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
     else:
         st.sidebar.warning("Por favor, seleccione una tienda.")
 
