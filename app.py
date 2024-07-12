@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime, timedelta
+from io import BytesIO
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
@@ -31,7 +32,7 @@ def generate_excel_with_dates(df, store_name):
 
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
-        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
+        current_date = pd.to_datetime(row['Ult. Prev.'], errors='coerce')
         col_num = 1
         while current_date <= max_date:
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
@@ -110,13 +111,16 @@ def main():
 
     # Botón para generar el Excel con fechas calculadas
     if st.sidebar.button('Programa Anual de Mantenimiento'):
-        planned_excel_data = generate_excel_with_dates(data, selected_store)
-        st.sidebar.download_button(
-            label='Descargar Programa Anual',
-            data=planned_excel_data,
-            file_name='programa_anual_mantenimiento.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+        if selected_store:
+            planned_excel_data = generate_excel_with_dates(data, selected_store)
+            st.sidebar.download_button(
+                label='Descargar Programa Anual',
+                data=planned_excel_data,
+                file_name='programa_anual_mantenimiento.xlsx',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        else:
+            st.sidebar.error('Selecciona una tienda si desea su Plan Anual de Mantenimiento')
 
 if __name__ == "__main__":
     main()
