@@ -2,13 +2,12 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from datetime import datetime, timedelta
-import os
 
-# Cargar el archivo consolidado desde el sistema local
+# Cargar el archivo consolidado desde el repositorio
 def load_data():
-    data_file = 'C:/Users/vgutierrez/chatbot_project/consolidated_file.xlsx'
+    url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
     try:
-        data = pd.read_excel(data_file)
+        data = pd.read_excel(url)
         return data
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
@@ -23,7 +22,7 @@ def to_excel(df):
     return processed_data
 
 # Función para generar el Excel con las fechas calculadas
-def generate_excel_with_dates(df):
+def generate_excel_with_dates(df, store_name):
     output = BytesIO()
     columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
@@ -55,7 +54,7 @@ def generate_excel_with_dates(df):
         worksheet_name = 'Fechas Planificadas'
         new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
         worksheet = writer.sheets[worksheet_name]
-        worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO')
+        worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
         date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
@@ -127,18 +126,20 @@ def main():
         )
 
     # Botón para generar el Excel con fechas calculadas
-    st.sidebar.header('Programa Anual de Mantenimiento')
-    if st.sidebar.button('Programa Anual de Mantenimiento'):
-        if selected_store:
-            planned_excel_data = generate_excel_with_dates(filtered_data)
-            st.sidebar.download_button(
-                label='Descargar Programa Anual',
-                data=planned_excel_data,
-                file_name='programa_anual_mantenimiento.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-        else:
-            st.sidebar.warning("Por favor, seleccione una tienda.")
+    if selected_store:
+        if st.sidebar.button('Programa Anual de Mantenimiento'):
+            if selected_month or selected_brand or selected_family:
+                st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
+            else:
+                planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
+                st.sidebar.download_button(
+                    label='Descargar Programa Anual',
+                    data=planned_excel_data,
+                    file_name='programa_anual_mantenimiento.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+    else:
+        st.sidebar.warning("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
     main()
