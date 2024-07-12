@@ -37,6 +37,10 @@ def generate_excel_with_dates(df, store_name):
     new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
     new_df = new_df.dropna(subset=['Ult. Prev.'])  # Eliminar filas con fechas no válidas
 
+    # Filtrar filas con la misma 'Llave1' manteniendo la más reciente 'Ult. Prev.'
+    new_df['Llave1'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
+    new_df = new_df.loc[new_df.groupby('Llave1')['Ult. Prev.'].idxmax()]
+
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
         current_date = row['Ult. Prev.']
@@ -45,9 +49,6 @@ def generate_excel_with_dates(df, store_name):
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
             col_num += 1
-
-    new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
