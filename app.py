@@ -2,44 +2,56 @@ import streamlit as st
 import pandas as pd
 import os
 
-def generate_excel_with_dates(df, store):
-    # Filtrar por tienda
-    df = df[df['Tienda'] == store]
+def generate_excel_with_dates(df, store_name):
+    try:
+        # Filtrar los datos por la tienda seleccionada
+        df = df[df['Tienda'] == store_name]
 
-    # Verificar que las columnas necesarias existan
-    required_columns = ['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ult. Prev.', 'Frecuencia']
-    missing_columns = [col for col in required_columns if col not in df.columns]
-    if missing_columns:
-        st.error(f"Faltan las siguientes columnas necesarias en los datos: {', '.join(missing_columns)}")
+        # Seleccionar las columnas relevantes
+        columns = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
+        df = df[columns]
+
+        # Ordenar por Familia, Tipo de Equipo, Tipo de Servicio y Ult. Prev.
+        df = df.sort_values(by=['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ult. Prev.'])
+
+        # Eliminar duplicados, manteniendo la fila con la fecha de 'Ult. Prev.' más reciente
+        df = df.loc[df.groupby(['Familia', 'Tipo de Equipo', 'Tipo de Servicio'])['Ult. Prev.'].idxmax()]
+
+        # Calcular las fechas programadas
+        max_date = pd.Timestamp('2024-12-31')
+        df_dates = df.copy()
+        for i, row in df_dates.iterrows():
+            current_date = row['Ult. Prev.']
+            freq_months = row['Frecuencia']
+            prog_dates = []
+            while current_date <= max_date:
+                prog_dates.append(current_date)
+                current_date += pd.DateOffset(months=freq_months)
+            for j, date in enumerate(prog_dates):
+                df_dates.at[i, f'Prog.{j+1}'] = date
+
+        # Crear el archivo Excel
+        excel_file = f'programa_anual_mantenimiento_{store_name}.xlsx'
+        with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
+            df_dates.to_excel(writer, sheet_name='Plan Anual', index=False, startrow=2)
+
+            # Formato del archivo
+            workbook = writer.book
+            worksheet = writer.sheets['Plan Anual']
+            title_format = workbook.add_format({'bold': True, 'font_size': 14})
+            worksheet.write('A1', f'Programa Anual de Mantenimiento - {store_name}', title_format)
+
+            # Formato de las columnas de fecha
+            date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
+            for col_num, value in enumerate(df_dates.columns):
+                if 'Prog' in value:
+                    worksheet.set_column(col_num, col_num, 15, date_format)
+
+        return excel_file
+
+    except Exception as e:
+        st.error(f"Error al generar el programa anual de mantenimiento: {str(e)}")
         return None
-
-    # Eliminar duplicados manteniendo el más reciente en "Ult. Prev."
-    df = df.loc[df.groupby(['Familia', 'Tipo de Equipo', 'Tipo de Servicio'])['Ult. Prev.'].idxmax()]
-
-    # Ordenar por las columnas especificadas
-    df = df.sort_values(by=['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ult. Prev.'])
-
-    # Inicializar un nuevo DataFrame para el programa anual
-    program_df = pd.DataFrame()
-
-    # Calcular las fechas programadas
-    for index, row in df.iterrows():
-        current_date = pd.to_datetime(row['Ult. Prev.'], errors='coerce')
-        if pd.isna(current_date):
-            continue
-        
-        program_dates = []
-        while current_date < pd.Timestamp('2024-12-31'):
-            current_date += pd.DateOffset(months=row['Frecuencia'])
-            program_dates.append(current_date.strftime('%d/%m/%Y'))
-        
-        program_row = row.to_dict()
-        for i, date in enumerate(program_dates, start=1):
-            program_row[f'Prog.{i}'] = date
-        
-        program_df = program_df.append(program_row, ignore_index=True)
-    
-    return program_df
 
 def main():
     st.title('Consolidación de Archivos Excel')
@@ -95,15 +107,16 @@ def main():
         filtered_data.to_excel('filtered_data.xlsx', index=False)
         st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
 
-    # Botón para generar el programa anual de mantenimiento
-    st.sidebar.header('Programa Anual de Mantenimiento')
-    selected_store = st.sidebar.selectbox('Selecciona una tienda para su Plan Anual de Mantenimiento', options=[''] + sorted(data['Tienda'].dropna().unique().tolist()))
-
-    if st.sidebar.button('Generar Plan Anual de Mantenimiento') and selected_store:
-        planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
-        if planned_excel_data is not None:
-            planned_excel_data.to_excel('programa_anual_mantenimiento.xlsx', index=False)
-            st.sidebar.markdown(f'[Descargar Programa Anual de Mantenimiento](programa_anual_mantenimiento.xlsx)')
+    # Botón para generar el Programa Anual de Mantenimiento
+    st.sidebar.header('Generar Programa Anual de Mantenimiento')
+    selected_store = st.sidebar.selectbox('Selecciona una tienda para su Plan Anual de Mantenimiento', sorted(data['Tienda'].unique()))
+    if st.sidebar.button('Programa Anual de Mantenimiento'):
+        if selected_store:
+            planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
+            if planned_excel_data:
+                st.sidebar.markdown(f'[Descargar Programa Anual de Mantenimiento]({planned_excel_data})')
+        else:
+            st.warning('Selecciona una tienda para generar el Plan Anual de Mantenimiento.')
 
 # Ejecutar la aplicación
 if __name__ == "__main__":
