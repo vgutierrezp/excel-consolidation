@@ -30,10 +30,12 @@ def generate_excel_with_dates(df, store_name):
     output = BytesIO()
     columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
-    # Mantener solo la fila con la fecha más reciente en "Ult. Prev." para cada servicio único
+    # Filtrar y mantener solo la fila con la fecha más reciente en "Ult. Prev." para cada servicio único
     df['Ult. Prev.'] = pd.to_datetime(df['Ult. Prev.'], errors='coerce')
     df = df.loc[df.groupby(['Familia', 'Tipo de Equipo', 'Tipo de Servicio'])['Ult. Prev.'].idxmax()]
 
+    st.write("Filas después de filtrar por fecha más reciente en 'Ult. Prev.':", df.shape[0])
+    
     new_df = df[columns_to_copy].copy()
     max_date = datetime(2024, 12, 31)
 
@@ -45,6 +47,8 @@ def generate_excel_with_dates(df, store_name):
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
             col_num += 1
+
+    st.write("Número de columnas después de agregar fechas programadas:", new_df.shape[1])
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
@@ -131,6 +135,7 @@ def main():
             if selected_month or selected_brand or selected_family:
                 st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
             else:
+                st.write(f"Generando el programa anual de mantenimiento para la tienda: {selected_store}")
                 planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
