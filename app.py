@@ -38,11 +38,18 @@ def generate_excel_with_dates(df, store_name):
             current_date += timedelta(days=freq)
             col_num += 1
 
+    # Eliminar filas con 'Ult. Prev.' vacío
     new_df = new_df.dropna(subset=['Ult. Prev.'])
+    
+    # Identificar servicios únicos y mantener la fecha más reciente
     new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
     new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
     new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
+    # Eliminar columnas 'Prog.' vacías
+    prog_columns = [col for col in new_df.columns if col.startswith('Prog.')]
+    new_df = new_df.dropna(how='all', subset=prog_columns)
+    
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
         new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
@@ -50,7 +57,10 @@ def generate_excel_with_dates(df, store_name):
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
-        worksheet.set_column('H:H', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
+        date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
+        for col_num, col_name in enumerate(new_df.columns):
+            if 'Prog.' in col_name or col_name == 'Ult. Prev.':
+                worksheet.set_column(col_num, col_num, None, date_format)
     processed_data = output.getvalue()
     return processed_data
 
