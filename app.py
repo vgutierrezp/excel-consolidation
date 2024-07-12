@@ -2,12 +2,13 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from datetime import datetime, timedelta
+import os
 
-# Cargar el archivo consolidado desde el repositorio
+# Cargar el archivo consolidado desde el sistema local
 def load_data():
-    url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
+    data_file = 'C:/Users/vgutierrez/chatbot_project/consolidated_file.xlsx'
     try:
-        data = pd.read_excel(url)
+        data = pd.read_excel(data_file)
         return data
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
@@ -22,39 +23,33 @@ def to_excel(df):
     return processed_data
 
 # Función para generar el Excel con las fechas calculadas
-def generate_excel_with_dates(df, store_name):
+def generate_excel_with_dates(df):
     output = BytesIO()
     columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
     new_df = df[columns_to_copy].copy()
     max_date = datetime(2024, 12, 31)
 
+    # Filtrar servicios únicos por la última fecha de 'Ult. Prev.'
+    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], errors='coerce')
+    new_df = new_df.sort_values('Ult. Prev.').drop_duplicates(subset=['Familia', 'Tipo de Equipo', 'Tipo de Servicio'], keep='last')
+
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
-        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
+        current_date = row['Ult. Prev.']
         col_num = 1
         while current_date <= max_date:
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
             current_date += timedelta(days=freq)
             col_num += 1
 
-    # Eliminar filas con 'Ult. Prev.' vacío
     new_df = new_df.dropna(subset=['Ult. Prev.'])
-    
-    # Identificar servicios únicos y mantener la fecha más reciente
-    new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
-    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
-    # Eliminar columnas 'Prog.' vacías
-    prog_columns = [col for col in new_df.columns if col.startswith('Prog.')]
-    new_df = new_df.dropna(how='all', subset=prog_columns)
-    
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
         new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
         worksheet = writer.sheets[worksheet_name]
-        worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
+        worksheet.write('A1', 'PLAN ANUAL DE MANTENIMIENTO')
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
         date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
@@ -126,20 +121,15 @@ def main():
         )
 
     # Botón para generar el Excel con fechas calculadas
-    if selected_store:
-        if st.sidebar.button('Programa Anual de Mantenimiento'):
-            if selected_month or selected_brand or selected_family:
-                st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
-            else:
-                planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
-                st.sidebar.download_button(
-                    label='Descargar Programa Anual',
-                    data=planned_excel_data,
-                    file_name='programa_anual_mantenimiento.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-    else:
-        st.sidebar.warning("Por favor, seleccione una tienda.")
+    st.sidebar.header('Programa Anual de Mantenimiento')
+    if st.sidebar.button('Programa Anual de Mantenimiento'):
+        planned_excel_data = generate_excel_with_dates(data)
+        st.sidebar.download_button(
+            label='Descargar Programa Anual',
+            data=planned_excel_data,
+            file_name='programa_anual_mantenimiento.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
 
 if __name__ == "__main__":
     main()
