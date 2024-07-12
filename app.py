@@ -93,13 +93,13 @@ def main():
         st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
 
 # Ejecutar la aplicación
-if __name__ == "__main__":
-    if 'mes' not in st.session_state:
-        st.session_state['mes'] = ''
-    if 'marca' not in st.session_state:
-        st.session_state['marca'] = ''
-    if 'tienda' not in st.session_state:
-        st.session_state['tienda'] = ''
-    if 'familia' not in st.session_state:
-        st.session_state['familia'] = ''
-    main()
+if 'mes' not in st.session_state:
+    st.session_state['mes'] = ''
+if 'marca' not in st.session_state:
+    st.session_state['marca'] = ''
+if 'tienda' not in st.session_state:
+    st.session_state['tienda'] = ''
+if 'familia' not in st.session_state:
+    st.session_state['familia'] = ''
+
+main()
