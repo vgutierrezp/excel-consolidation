@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 def main():
-    st.title('Consolidación de Archivos Excel')
+    st.title('Programa de Mantenimiento Preventivo')
 
     # Ruta del archivo Excel
     data_file = 'consolidated_file.xlsx'
@@ -47,20 +47,24 @@ def main():
     if familia:
         filtered_data = filtered_data[filtered_data['Familia'] == familia]
 
-    # Mostrar la tabla filtrada
-    st.dataframe(filtered_data)
+    # Mostrar la tabla filtrada con columnas relevantes
+    relevant_columns = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
+    st.dataframe(filtered_data[relevant_columns])
 
     # Botón para descargar el archivo filtrado en Excel
     st.sidebar.header('Descargar Datos')
     if st.sidebar.button('Descargar Excel'):
-        filtered_data.to_excel('filtered_data.xlsx', index=False)
+        filtered_data[relevant_columns].to_excel('filtered_data.xlsx', index=False)
         st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
 
     # Botón para generar el programa anual de mantenimiento
     if st.sidebar.button('Programa Anual de Mantenimiento'):
+        if not tienda:
+            st.warning('Por favor, selecciona una tienda para generar el Programa Anual de Mantenimiento.')
+            return
+
         # Seleccionar las columnas relevantes
-        selected_columns = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
-        program_data = filtered_data[selected_columns].drop_duplicates()
+        program_data = filtered_data[relevant_columns].drop_duplicates()
 
         # Ordenar por 'Ult. Prev.' (ascendente) y 'Familia' (alfabético)
         program_data = program_data.sort_values(by=['Ult. Prev.', 'Familia'], ascending=[True, True])
