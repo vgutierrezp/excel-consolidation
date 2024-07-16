@@ -94,7 +94,7 @@ def generate_excel_with_dates(df, store_name):
 
     # Calcular las fechas programadas
     for i in range(1, 25):  # Calculando hasta 24 meses adelante
-        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
+        plan_df[f'Prog.{i}'] = plan_df.apply(lambda row: row['Ult. Prev.'] + pd.DateOffset(months=i*row['Frecuencia']), axis=1)
 
     # Crear el archivo Excel
     output_file = f"Plan Anual de Mantenimiento {store_name}.xlsx"
