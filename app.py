@@ -33,12 +33,30 @@ def generate_excel_with_dates(df, store_name):
         return None
 
     new_df = df[columns_to_copy].copy()
+
+    # Eliminar filas con valores nulos en las columnas necesarias
+    new_df = new_df.dropna(subset=['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'Ult. Prev.'])
+
+    # Crear la columna 'Unique_Service'
+    new_df['Unique_Service'] = (new_df['Familia'] + new_df['Tipo de Equipo'] + 
+                                new_df['Tipo de Servicio'] + new_df['Ejecutor'] + 
+                                new_df['Frecuencia'].astype(str))
+    
+    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
+    
+    if new_df['Ult. Prev.'].isnull().any():
+        st.warning("Algunas fechas en 'Ult. Prev.' no pudieron ser convertidas y serán ignoradas.")
+        new_df = new_df.dropna(subset=['Ult. Prev.'])
+
+    # Obtener las filas con la fecha más reciente para cada servicio único
+    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
+
     max_date = datetime(2024, 12, 31)
 
     for index, row in new_df.iterrows():
         try:
             freq = row['Frecuencia']
-            current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
+            current_date = row['Ult. Prev.']
             col_num = 1
             while current_date <= max_date:
                 new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
@@ -47,11 +65,6 @@ def generate_excel_with_dates(df, store_name):
         except Exception as e:
             st.warning(f"Error processing row {index}: {e}")
             continue
-
-    new_df = new_df.dropna(subset=['Ult. Prev.'])
-    new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
-    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = store_name
