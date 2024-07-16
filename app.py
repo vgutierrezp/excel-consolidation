@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import openpyxl
 from io import BytesIO
 import datetime
 
@@ -56,25 +55,24 @@ def generate_excel_with_dates(original_df, filtered_df, store_name):
 
     # Create the Excel writer and add the plan DataFrame
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='openpyxl')
-    plan_df.to_excel(writer, sheet_name=store_name, index=False)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        plan_df.to_excel(writer, sheet_name=store_name, index=False)
+        
+        # Add header with store name
+        workbook = writer.book
+        worksheet = writer.sheets[store_name]
+        worksheet.merge_cells('A1:G1')
+        worksheet.cell(row=1, column=1).value = f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}'
     
-    # Add header with store name
-    workbook = writer.book
-    worksheet = writer.sheets[store_name]
-    worksheet.merge_cells('A1:G1')
-    worksheet.cell(row=1, column=1).value = f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}'
-    
-    writer.save()
     processed_data = output.getvalue()
     return processed_data
 
 # Function to download the filtered data
 def download_filtered_data(df):
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='openpyxl')
-    df.to_excel(writer, index=False, sheet_name='Filtered Data')
-    writer.save()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Filtered Data')
+    
     processed_data = output.getvalue()
     return processed_data
 
