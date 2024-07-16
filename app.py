@@ -7,6 +7,9 @@ def generate_excel_with_dates(df, store_name):
     # Concatenar las columnas relevantes para identificar servicios únicos
     df['Unique_Service'] = df['Familia'] + '_' + df['Tipo de Equipo'] + '_' + df['Tipo de Servicio'] + '_' + df['Ejecutor'] + '_' + df['Frecuencia'].astype(str)
     
+    # Convertir 'Ult. Prev.' a formato de fecha y manejar errores
+    df['Ult. Prev.'] = pd.to_datetime(df['Ult. Prev.'], errors='coerce')
+    
     # Ordenar y filtrar duplicados
     df = df.sort_values(by=['Ult. Prev.'], ascending=False)
     df = df.loc[df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
@@ -15,7 +18,6 @@ def generate_excel_with_dates(df, store_name):
     plan_df = df[['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.']]
     
     # Calcular las fechas programadas
-    plan_df['Ult. Prev.'] = pd.to_datetime(plan_df['Ult. Prev.'], errors='coerce')
     for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
         plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
     
@@ -84,6 +86,9 @@ def main():
         filtered_data = filtered_data[filtered_data['Tienda'] == tienda]
     if familia:
         filtered_data = filtered_data[filtered_data['Familia'] == familia]
+
+    # Convertir 'Ult. Prev.' a formato de fecha y manejar errores
+    filtered_data['Ult. Prev.'] = pd.to_datetime(filtered_data['Ult. Prev.'], errors='coerce')
 
     # Ordenar la tabla de manera cronológica
     filtered_data = filtered_data.sort_values(by=['Ult. Prev.'], ascending=True)
