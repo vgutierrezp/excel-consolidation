@@ -18,8 +18,12 @@ def generate_excel_with_dates(df, store_name):
     plan_df = df[['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.']]
     
     # Calcular las fechas programadas
-    for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
-        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
+    if 'Frecuencia' in df.columns:
+        for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
+            plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
+    else:
+        st.error("La columna 'Frecuencia' no se encuentra en los datos.")
+        return None
     
     # Formatear las fechas
     date_columns = [col for col in plan_df.columns if 'Prog.' in col]
@@ -56,6 +60,13 @@ def main():
     except Exception as e:
         st.error(f"Error al leer el archivo Excel: {str(e)}")
         return
+
+    # Verificar si las columnas necesarias existen
+    required_columns = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.', 'Frecuencia']
+    for col in required_columns:
+        if col not in data.columns:
+            st.error(f"La columna '{col}' no se encuentra en los datos.")
+            return
 
     # Definir los filtros
     st.sidebar.header('Filtros')
@@ -107,7 +118,8 @@ def main():
     if st.sidebar.button('Programa Anual de Mantenimiento'):
         if tienda:
             planned_excel_data = generate_excel_with_dates(filtered_data, tienda)
-            st.sidebar.download_button(label='Descargar Plan Anual de Mantenimiento', data=planned_excel_data, file_name=f'Plan Anual de Mantenimiento {tienda}.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            if planned_excel_data:
+                st.sidebar.download_button(label='Descargar Plan Anual de Mantenimiento', data=planned_excel_data, file_name=f'Plan Anual de Mantenimiento {tienda}.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         else:
             st.warning('Selecciona una tienda si desea su Plan Anual de Mantenimiento')
 
