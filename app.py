@@ -17,13 +17,14 @@ def generate_excel_with_dates(df, store_name):
     # Crear el DataFrame para el plan anual
     plan_df = df[['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.']]
     
-    # Calcular las fechas programadas
-    if 'Frecuencia' in df.columns:
-        for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
-            plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
-    else:
-        st.error("La columna 'Frecuencia' no se encuentra en los datos.")
+    # Verificar si 'Frecuencia' está presente y no tiene valores faltantes
+    if 'Frecuencia' not in df.columns or df['Frecuencia'].isnull().any():
+        st.error("La columna 'Frecuencia' no está presente o contiene valores faltantes.")
         return None
+    
+    # Calcular las fechas programadas
+    for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
+        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
     
     # Formatear las fechas
     date_columns = [col for col in plan_df.columns if 'Prog.' in col]
