@@ -68,8 +68,14 @@ def main():
     data_file = 'consolidated_file.xlsx'  # Update the path as needed
     data = pd.read_excel(data_file)
     
+    # Handle months in Spanish and their order
+    months = {
+        "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
+        "julio": 7, "agosto": 8, "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
+    }
+    
     # Sidebar filters
-    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique(), key=lambda x: datetime.datetime.strptime(x, '%B').month))
+    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique(), key=lambda x: months.get(x.lower(), 0)))
     marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique()))
     tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique()))
     familia = st.sidebar.selectbox('Familia', [''] + sorted(data['Familia'].dropna().unique()))
@@ -77,7 +83,7 @@ def main():
     # Filter data based on selections
     filtered_data = data.copy()
     if mes:
-        filtered_data = filtered_data[filtered_data['Mes'] == mes]
+        filtered_data = filtered_data[filtered_data['Mes'].str.lower() == mes.lower()]
     if marca:
         filtered_data = filtered_data[filtered_data['Marca'] == marca]
     if tienda:
