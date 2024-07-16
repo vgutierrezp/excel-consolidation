@@ -75,6 +75,7 @@ def main():
     }
     
     # Sidebar filters
+    st.sidebar.header("Filtros")
     mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique(), key=lambda x: months.get(x.lower(), 0)))
     marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique()))
     tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique()))
@@ -94,12 +95,12 @@ def main():
     st.dataframe(filtered_data)
     
     # Input for store name
-    store_name = st.text_input('Nombre de la Tienda', value='BB - Caminos Del Inca')
+    store_name = st.sidebar.text_input('Nombre de la Tienda', value='BB - Caminos Del Inca')
     
     # Button to generate the plan
-    if st.button('Programa Anual de Mantenimiento'):
+    if st.sidebar.button('Programa Anual de Mantenimiento'):
         planned_excel_data = generate_excel_with_dates(data, filtered_data, store_name)
-        st.download_button(
+        st.sidebar.download_button(
             label=f'Descargar Plan Anual de Mantenimiento ({store_name})',
             data=planned_excel_data,
             file_name=f'Plan Anual de Mantenimiento {store_name}.xlsx',
