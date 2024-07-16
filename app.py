@@ -59,7 +59,7 @@ def main():
         filtered_data = filtered_data[filtered_data['Familia'] == familia]
 
     # Mostrar la tabla filtrada con las columnas específicas
-    columns_to_show = ["Mes", "Llave1", "LlavePPto", "Ceco", "Marca", "Tienda", "Familia", "Tipo de Equipo", "Tipo de Servicio", "Ejecutor", "Frecuencia", "N° Equipos", "Ult. Prev."]
+    columns_to_show = ["Mes", "Llave1", "LlavePPto", "Ceco", "Marca", "Tienda", "Familia", "Tipo de Equipo", "Tipo de Servicio", "Frecuencia", "N° Equipos", "Ult. Prev."]
     st.dataframe(filtered_data[columns_to_show])
 
     # Botón para descargar el archivo filtrado en Excel
@@ -77,13 +77,13 @@ def main():
 
     # Sección para generar el plan anual de mantenimiento
     st.sidebar.header('Generar Plan')
-    tienda = st.sidebar.text_input("Nombre de la Tienda")
+    store_name = st.sidebar.text_input("Nombre de la Tienda")
 
     if st.sidebar.button('Programa Anual de Mantenimiento'):
-        if not tienda:
+        if not store_name:
             st.warning("Por favor, ingrese el nombre de la tienda.")
         else:
-            planned_excel_data = generate_excel_with_dates(data, filtered_data, tienda)
+            planned_excel_data = generate_excel_with_dates(data, filtered_data, store_name)
             st.sidebar.markdown(planned_excel_data, unsafe_allow_html=True)
 
 def generate_excel_with_dates(original_data, filtered_data, store_name):
@@ -121,13 +121,12 @@ def generate_excel_with_dates(original_data, filtered_data, store_name):
     return href
 
 def add_months_with_limit(source_date, months, max_date):
-    try:
-        new_date = source_date + pd.DateOffset(months=months)
-        if new_date > max_date:
-            return max_date
-        return new_date
-    except pd._libs.tslibs.np_datetime.OutOfBoundsDatetime:
-        return max_date
+    if not isinstance(source_date, pd.Timestamp):
+        source_date = pd.to_datetime(source_date, errors='coerce')
+    if pd.isna(source_date):
+        return pd.NaT
+    new_date = source_date + pd.DateOffset(months=months)
+    return min(new_date, max_date)
 
 # Ejecutar la aplicación
 if 'mes' not in st.session_state:
