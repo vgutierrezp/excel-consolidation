@@ -101,14 +101,7 @@ def generate_excel_with_dates(df, store_name):
 
     # Crear el archivo Excel
     output_file = f"Plan Anual de Mantenimiento {store_name}.xlsx"
-    with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
-        workbook = writer.book
-        worksheet = workbook.add_worksheet(store_name)
-        writer.sheets[store_name] = worksheet
-
-        # Escribir el título y el DataFrame
-        worksheet.write('A1', f"PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}")
-        plan_df.to_excel(writer, sheet_name=store_name, startrow=2, index=False)
+    plan_df.to_excel(output_file, index=False, sheet_name=store_name)
 
     return f'<a href="{output_file}" download>Descargar Plan Anual de Mantenimiento</a>'
 
