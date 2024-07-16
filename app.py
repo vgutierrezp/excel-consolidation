@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import io
 
 def main():
     st.title('Programa de Mantenimiento Preventivo')
@@ -63,8 +64,15 @@ def main():
     # Botón para descargar el archivo filtrado en Excel
     st.sidebar.header('Descargar Datos')
     if st.sidebar.button('Descargar Excel'):
-        filtered_data.to_excel('filtered_data.xlsx', index=False)
-        st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
+        towrite = io.BytesIO()
+        filtered_data.to_excel(towrite, index=False, engine='xlsxwriter')
+        towrite.seek(0)
+        st.sidebar.download_button(
+            label="Descargar archivo filtrado",
+            data=towrite,
+            file_name='filtered_data.xlsx',
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     # Sección para generar el plan anual de mantenimiento
     st.sidebar.header('Generar Plan')
@@ -100,10 +108,13 @@ def generate_excel_with_dates(df, store_name):
         plan_df[f'Prog.{i}'] = plan_df.apply(lambda row: add_months_with_limit(row['Ult. Prev.'], i * row['Frecuencia'], max_date), axis=1)
 
     # Crear el archivo Excel
-    output_file = f"Plan Anual de Mantenimiento {store_name}.xlsx"
-    plan_df.to_excel(output_file, index=False, sheet_name=store_name)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        plan_df.to_excel(writer, index=False, sheet_name=store_name)
+        writer.save()
+    output.seek(0)
 
-    return f'<a href="{output_file}" download>Descargar Plan Anual de Mantenimiento</a>'
+    return f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{base64.b64encode(output.read()).decode()}" download="Plan Anual de Mantenimiento {store_name}.xlsx">Descargar Plan Anual de Mantenimiento</a>'
 
 def add_months_with_limit(source_date, months, max_date):
     try:
