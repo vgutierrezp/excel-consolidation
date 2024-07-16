@@ -19,7 +19,7 @@ def generate_excel_with_dates(df, store_name):
     
     # Calcular las fechas programadas
     for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
-        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.to_timedelta(i * plan_df['Frecuencia'], unit='M')
+        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
     
     # Formatear las fechas
     date_columns = [col for col in plan_df.columns if 'Prog.' in col]
