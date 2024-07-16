@@ -112,7 +112,6 @@ def generate_excel_with_dates(df, store_name):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         plan_df.to_excel(writer, index=False, sheet_name=store_name)
-        writer.save()
     output.seek(0)
 
     # Generar el enlace de descarga
