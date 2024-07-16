@@ -68,7 +68,8 @@ def main():
     # Definir los valores iniciales de los filtros
     # Ordenar meses cronológicamente
     months = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
-    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique(), key=lambda x: months.index(x)), key='mes')
+    unique_months = [m for m in data['Mes'].dropna().unique() if m in months]
+    mes = st.sidebar.selectbox('Mes', [''] + sorted(unique_months, key=lambda x: months.index(x)), key='mes')
     marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique().tolist()), key='marca')
     tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique().tolist()), key='tienda')
     familia = st.sidebar.selectbox('Familia', [''] + sorted(data['Familia'].dropna().unique().tolist()), key='familia')
