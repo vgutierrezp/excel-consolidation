@@ -83,23 +83,24 @@ def main():
         if not tienda:
             st.warning("Por favor, ingrese el nombre de la tienda.")
         else:
-            planned_excel_data = generate_excel_with_dates(filtered_data, tienda)
+            planned_excel_data = generate_excel_with_dates(data, filtered_data, tienda)
             st.sidebar.markdown(planned_excel_data, unsafe_allow_html=True)
 
-def generate_excel_with_dates(df, store_name):
-    # Definir las columnas a usar
-    df = df[["Tienda", "Familia", "Tipo de Equipo", "Tipo de Servicio", "Ejecutor", "Frecuencia", "N° Equipos", "Ult. Prev."]]
-    df['Unique_Service'] = df['Familia'] + df['Tipo de Equipo'] + df['Tipo de Servicio'] + df['Ejecutor'] + df['Frecuencia'].astype(str)
+def generate_excel_with_dates(original_data, filtered_data, store_name):
+    # Validar la columna Ejec.1 desde enero hasta julio y copiarla en la columna Ult. Prev.
+    filtered_data['Ult. Prev.'] = filtered_data.apply(lambda row: row['Ejec.1'] if pd.notna(row['Ejec.1']) else row['Ult. Prev.'], axis=1)
 
-    # Filtrar por el servicio más reciente
-    df['Ult. Prev.'] = pd.to_datetime(df['Ult. Prev.'], errors='coerce')
-    df = df.sort_values(by='Ult. Prev.', ascending=False).drop_duplicates('Unique_Service')
+    # Retirar el "Ejecutor" del concatenado
+    filtered_data['Unique_Service'] = filtered_data['Familia'] + filtered_data['Tipo de Equipo'] + filtered_data['Tipo de Servicio'] + filtered_data['Frecuencia'].astype(str)
+
+    # Obtener servicios únicos
+    filtered_data = filtered_data.drop_duplicates(subset='Unique_Service')
 
     # Asegurarse de que la frecuencia sea un entero válido, reemplazar los valores inválidos con 1
-    df['Frecuencia'] = pd.to_numeric(df['Frecuencia'], errors='coerce').fillna(1).astype(int)
+    filtered_data['Frecuencia'] = pd.to_numeric(filtered_data['Frecuencia'], errors='coerce').fillna(1).astype(int)
 
     # Inicializar un nuevo DataFrame
-    plan_df = df.copy()
+    plan_df = filtered_data.copy()
 
     # Limitar la fecha máxima permitida
     max_date = pd.Timestamp('2024-12-31')
