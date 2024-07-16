@@ -29,8 +29,11 @@ def generate_excel_with_dates(original_df, filtered_df, store_name):
     filtered_df = filtered_df[filtered_df['Ejec.1'].notna()]
     
     # Group by 'Unique_Service' and get the most recent 'Ejec.1'
+    def get_most_recent_execution(group):
+        return group.loc[group['Ejec.1'].idxmax()]
+    
     if not filtered_df.empty:
-        new_df = filtered_df.loc[filtered_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+        new_df = filtered_df.groupby('Unique_Service').apply(get_most_recent_execution).reset_index(drop=True)
     else:
         new_df = pd.DataFrame(columns=filtered_df.columns)
     
