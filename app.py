@@ -24,7 +24,7 @@ def to_excel(df):
 # Función para generar el Excel filtrado
 def generate_excel(data, store_name):
     output = BytesIO()
-    columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
+    columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1']
 
     # Crear columna de concatenación única para identificar servicios únicos
     data['Unique_Service'] = data['Familia'] + data['Tipo de Equipo'] + data['Tipo de Servicio']
@@ -62,6 +62,7 @@ def generate_excel(data, store_name):
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
         worksheet.set_column('H:H', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
+        worksheet.set_column('I:I', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
     processed_data = output.getvalue()
     return processed_data
 
