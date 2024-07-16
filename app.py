@@ -75,7 +75,7 @@ def main():
             st.warning("Por favor, ingrese el nombre de la tienda.")
         else:
             planned_excel_data = generate_excel_with_dates(filtered_data, tienda)
-            st.sidebar.markdown(planned_excel_data)
+            st.sidebar.markdown(planned_excel_data, unsafe_allow_html=True)
 
 def generate_excel_with_dates(df, store_name):
     # Definir las columnas a usar
@@ -110,7 +110,7 @@ def generate_excel_with_dates(df, store_name):
         worksheet.write('A1', f"PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}")
         plan_df.to_excel(writer, sheet_name=store_name, startrow=2, index=False)
 
-    return f'[Descargar Plan Anual de Mantenimiento](Plan Anual de Mantenimiento {store_name}.xlsx)'
+    return f'<a href="{output_file}" download>Descargar Plan Anual de Mantenimiento</a>'
 
 def add_months_with_limit(source_date, months, max_date):
     try:
