@@ -29,20 +29,22 @@ def generate_excel(data, store_name):
     # Crear columna de concatenación única para identificar servicios únicos
     data['Unique_Service'] = data['Familia'] + data['Tipo de Equipo'] + data['Tipo de Servicio']
 
-    # Filtrar los datos por tienda y eliminar duplicados, quedándose con la fecha más reciente en Ejec.1 de enero al mes actual
-    filtered_df = data[data['Tienda'] == store_name]
+    # Filtrar los datos por tienda
+    filtered_df = data[data['Tienda'] == store_name].copy()
+
+    # Filtrar los datos por el mes actual y anteriores, quedándose con la fecha más reciente en Ejec.1
     filtered_df['Ejec.1'] = pd.to_datetime(filtered_df['Ejec.1'], errors='coerce')
     current_month = datetime.now().month
-    filtered_df = filtered_df[(filtered_df['Ejec.1'].dt.month >= 1) & (filtered_df['Ejec.1'].dt.month <= current_month)]
-    filtered_df = filtered_df.loc[filtered_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+    filtered_df_jan_to_now = filtered_df[(filtered_df['Ejec.1'].dt.month >= 1) & (filtered_df['Ejec.1'].dt.month <= current_month)]
+    filtered_df_jan_to_now = filtered_df_jan_to_now.loc[filtered_df_jan_to_now.groupby('Unique_Service')['Ejec.1'].idxmax()]
 
-    # Buscar filas con fechas en meses posteriores en Ult. Prev.
-    df_remaining = data[(data['Ejec.1'].isna()) & (data['Ult. Prev.'] >= '2024-01-01')]
-    df_remaining['Ult. Prev.'] = pd.to_datetime(df_remaining['Ult. Prev.'], errors='coerce')
-    df_remaining = df_remaining.loc[df_remaining.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
+    # Filtrar los datos por los meses posteriores, quedándose con la fecha más reciente en Ult. Prev.
+    filtered_df['Ult. Prev.'] = pd.to_datetime(filtered_df['Ult. Prev.'], errors='coerce')
+    filtered_df_next_months = filtered_df[filtered_df['Ejec.1'].isna() & (filtered_df['Ult. Prev.'].dt.month > current_month)]
+    filtered_df_next_months = filtered_df_next_months.loc[filtered_df_next_months.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     # Concatenar ambos DataFrames
-    final_df = pd.concat([filtered_df, df_remaining])
+    final_df = pd.concat([filtered_df_jan_to_now, filtered_df_next_months])
 
     # Seleccionar las columnas necesarias
     final_df = final_df[columns_to_include].copy()
