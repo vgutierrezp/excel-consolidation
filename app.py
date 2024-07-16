@@ -26,6 +26,12 @@ def generate_excel_with_dates(df, store_name):
     output = BytesIO()
     columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
+    # Validar existencia de las columnas necesarias
+    missing_columns = [col for col in columns_to_copy if col not in df.columns]
+    if missing_columns:
+        st.error(f"Faltan columnas necesarias en el DataFrame: {', '.join(missing_columns)}")
+        return None
+
     new_df = df[columns_to_copy].copy()
     max_date = datetime(2024, 12, 31)
 
@@ -126,12 +132,13 @@ def main():
                 st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
             else:
                 planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
-                st.sidebar.download_button(
-                    label='Descargar Programa Anual',
-                    data=planned_excel_data,
-                    file_name=f'Plan Anual de Mantenimiento {selected_store}.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
+                if planned_excel_data:
+                    st.sidebar.download_button(
+                        label='Descargar Programa Anual',
+                        data=planned_excel_data,
+                        file_name=f'Plan Anual de Mantenimiento {selected_store}.xlsx',
+                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
     else:
         st.sidebar.warning("Por favor, seleccione una tienda.")
 
