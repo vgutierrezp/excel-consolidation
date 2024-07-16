@@ -92,9 +92,12 @@ def generate_excel_with_dates(df, store_name):
     # Inicializar un nuevo DataFrame
     plan_df = df.copy()
 
+    # Limitar la fecha máxima permitida
+    max_date = pd.Timestamp('2024-12-31')
+
     # Calcular las fechas programadas
     for i in range(1, 25):  # Calculando hasta 24 meses adelante
-        plan_df[f'Prog.{i}'] = plan_df.apply(lambda row: row['Ult. Prev.'] + pd.DateOffset(months=i*row['Frecuencia']), axis=1)
+        plan_df[f'Prog.{i}'] = plan_df.apply(lambda row: add_months_with_limit(row['Ult. Prev.'], i * row['Frecuencia'], max_date), axis=1)
 
     # Crear el archivo Excel
     output_file = f"Plan Anual de Mantenimiento {store_name}.xlsx"
@@ -108,6 +111,15 @@ def generate_excel_with_dates(df, store_name):
         plan_df.to_excel(writer, sheet_name=store_name, startrow=2, index=False)
 
     return f'[Descargar Plan Anual de Mantenimiento](Plan Anual de Mantenimiento {store_name}.xlsx)'
+
+def add_months_with_limit(source_date, months, max_date):
+    try:
+        new_date = source_date + pd.DateOffset(months=months)
+        if new_date > max_date:
+            return max_date
+        return new_date
+    except pd._libs.tslibs.np_datetime.OutOfBoundsDatetime:
+        return max_date
 
 # Ejecutar la aplicación
 if 'mes' not in st.session_state:
