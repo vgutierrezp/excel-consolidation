@@ -61,7 +61,7 @@ def main():
         st.success(f"Archivo guardado como {output_filename}")
         st.download_button(
             label="Descargar archivo Excel",
-            data=output_filename,
+            data=open(output_filename, "rb").read(),
             file_name=output_filename,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
