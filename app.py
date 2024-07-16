@@ -19,7 +19,7 @@ def generate_excel_with_dates(df, store_name):
     
     # Calcular las fechas programadas
     for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
-        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
+        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*df['Frecuencia'])
     
     # Formatear las fechas
     date_columns = [col for col in plan_df.columns if 'Prog.' in col]
@@ -93,13 +93,14 @@ def main():
     # Ordenar la tabla de manera cronológica
     filtered_data = filtered_data.sort_values(by=['Ult. Prev.'], ascending=True)
 
-    # Mostrar la tabla filtrada
-    st.dataframe(filtered_data)
+    # Mostrar solo las columnas necesarias
+    columns_to_show = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.']
+    st.dataframe(filtered_data[columns_to_show])
 
     # Botón para descargar el archivo filtrado en Excel
     st.sidebar.header('Descargar Datos')
     if st.sidebar.button('Descargar Excel'):
-        filtered_data.to_excel('filtered_data.xlsx', index=False)
+        filtered_data[columns_to_show].to_excel('filtered_data.xlsx', index=False)
         st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
 
     # Botón para generar el plan anual de mantenimiento
