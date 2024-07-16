@@ -1,48 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import io
-
-def generate_excel_with_dates(df, store_name):
-    # Concatenar las columnas relevantes para identificar servicios únicos
-    df['Unique_Service'] = df['Familia'] + '_' + df['Tipo de Equipo'] + '_' + df['Tipo de Servicio'] + '_' + df['Ejecutor'] + '_' + df['Frecuencia'].astype(str)
-    
-    # Convertir 'Ult. Prev.' a formato de fecha y manejar errores
-    df['Ult. Prev.'] = pd.to_datetime(df['Ult. Prev.'], errors='coerce')
-    
-    # Ordenar y filtrar duplicados
-    df = df.sort_values(by=['Ult. Prev.'], ascending=False)
-    df = df.loc[df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
-    
-    # Crear el DataFrame para el plan anual
-    plan_df = df[['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.']]
-    
-    # Verificar si 'Frecuencia' está presente y no tiene valores faltantes
-    if 'Frecuencia' not in df.columns or df['Frecuencia'].isnull().any():
-        st.error("La columna 'Frecuencia' no está presente o contiene valores faltantes.")
-        return None
-    
-    # Calcular las fechas programadas
-    for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
-        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
-    
-    # Formatear las fechas
-    date_columns = [col for col in plan_df.columns if 'Prog.' in col]
-    for col in date_columns:
-        plan_df[col] = plan_df[col].dt.strftime('%d/%m/%Y')
-    
-    # Crear el archivo Excel en memoria
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        plan_df.to_excel(writer, index=False, sheet_name=store_name)
-        workbook = writer.book
-        worksheet = writer.sheets[store_name]
-        worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}', workbook.add_format({'bold': True}))
-        for col_num, value in enumerate(plan_df.columns.values):
-            worksheet.write(2, col_num, value, workbook.add_format({'bold': True}))
-        writer.save()
-    
-    return output.getvalue()
 
 def main():
     st.title('Programa de Mantenimiento Preventivo')
@@ -62,13 +20,6 @@ def main():
         st.error(f"Error al leer el archivo Excel: {str(e)}")
         return
 
-    # Verificar si las columnas necesarias existen
-    required_columns = ['Mes', 'Marca', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.', 'Frecuencia']
-    for col in required_columns:
-        if col not in data.columns:
-            st.error(f"La columna '{col}' no se encuentra en los datos.")
-            return
-
     # Definir los filtros
     st.sidebar.header('Filtros')
 
@@ -79,11 +30,12 @@ def main():
         st.session_state['tienda'] = ''
         st.session_state['familia'] = ''
 
+    # Ordenar los meses cronológicamente
+    months = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
+    data['Mes'] = pd.Categorical(data['Mes'], categories=months, ordered=True)
+
     # Definir los valores iniciales de los filtros
-    # Ordenar meses cronológicamente
-    months = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
-    unique_months = [m for m in data['Mes'].dropna().unique() if m in months]
-    mes = st.sidebar.selectbox('Mes', [''] + sorted(unique_months, key=lambda x: months.index(x)), key='mes')
+    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique().tolist(), key=lambda x: months.index(x)), key='mes')
     marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique().tolist()), key='marca')
     tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique().tolist()), key='tienda')
     familia = st.sidebar.selectbox('Familia', [''] + sorted(data['Familia'].dropna().unique().tolist()), key='familia')
@@ -99,30 +51,45 @@ def main():
     if familia:
         filtered_data = filtered_data[filtered_data['Familia'] == familia]
 
-    # Convertir 'Ult. Prev.' a formato de fecha y manejar errores
-    filtered_data['Ult. Prev.'] = pd.to_datetime(filtered_data['Ult. Prev.'], errors='coerce')
+    # Seleccionar columnas a mostrar
+    selected_columns = ["Mes", "Llave1", "LlavePPto", "Ceco", "Marca", "Tienda", "Familia", "Tipo de Equipo", "Tipo de Servicio", "Ejecutor", "Frecuencia", "N° Equipos", "Ult. Prev."]
+    filtered_data = filtered_data[selected_columns]
 
-    # Ordenar la tabla de manera cronológica
-    filtered_data = filtered_data.sort_values(by=['Ult. Prev.'], ascending=True)
+    # Mostrar la tabla filtrada
+    st.dataframe(filtered_data)
 
-    # Mostrar solo las columnas necesarias
-    columns_to_show = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'N° Equipos', 'Ult. Prev.']
-    st.dataframe(filtered_data[columns_to_show])
+    # Función para generar el plan anual de mantenimiento
+    def generate_maintenance_plan(df, store_name):
+        df['Unique_Service'] = df['Familia'] + df['Tipo de Equipo'] + df['Tipo de Servicio'] + df['Ejecutor'] + df['Frecuencia'].astype(str)
+        plan_df = df.loc[df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
-    # Botón para descargar el archivo filtrado en Excel
-    st.sidebar.header('Descargar Datos')
-    if st.sidebar.button('Descargar Excel'):
-        filtered_data[columns_to_show].to_excel('filtered_data.xlsx', index=False)
-        st.sidebar.markdown(f'[Descargar archivo filtrado](filtered_data.xlsx)')
+        # Calcular las fechas programadas
+        for i in range(1, 13):
+            plan_df[f'Prog.{i}'] = pd.to_datetime(plan_df['Ult. Prev.']) + pd.DateOffset(months=i * plan_df['Frecuencia'])
+
+        # Seleccionar columnas para el plan
+        plan_df = plan_df[["Tienda", "Familia", "Tipo de Equipo", "Tipo de Servicio", "Ejecutor", "N° Equipos", "Ult. Prev."] + [f'Prog.{i}' for i in range(1, 13)]]
+
+        # Crear un archivo Excel
+        excel_file = f'Plan_Anual_de_Mantenimiento_{store_name}.xlsx'
+        with pd.ExcelWriter(excel_file) as writer:
+            plan_df.to_excel(writer, sheet_name=store_name, index=False, startrow=2)
+            workbook = writer.book
+            worksheet = writer.sheets[store_name]
+            worksheet.write(0, 0, f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
+            worksheet.set_row(0, None, workbook.add_format({'bold': True}))
+
+        return excel_file
 
     # Botón para generar el plan anual de mantenimiento
+    st.sidebar.header('Generar Plan')
+    tienda = st.sidebar.text_input("Nombre de la Tienda")
     if st.sidebar.button('Programa Anual de Mantenimiento'):
         if tienda:
-            planned_excel_data = generate_excel_with_dates(filtered_data, tienda)
-            if planned_excel_data:
-                st.sidebar.download_button(label='Descargar Plan Anual de Mantenimiento', data=planned_excel_data, file_name=f'Plan Anual de Mantenimiento {tienda}.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            planned_excel_data = generate_maintenance_plan(filtered_data, tienda)
+            st.sidebar.markdown(f'[Descargar Plan Anual de Mantenimiento]({planned_excel_data})')
         else:
-            st.warning('Selecciona una tienda si desea su Plan Anual de Mantenimiento')
+            st.sidebar.error("Por favor, ingrese el nombre de la tienda.")
 
 # Ejecutar la aplicación
 if __name__ == "__main__":
