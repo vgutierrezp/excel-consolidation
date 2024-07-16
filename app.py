@@ -33,8 +33,11 @@ def main():
     # Lista de meses en orden cronológico
     months = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
 
+    # Filtrar y ordenar los meses válidos
+    valid_months = [m for m in data['Mes'].dropna().unique() if m in months]
+
     # Definir los valores iniciales de los filtros
-    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique(), key=lambda x: months.index(x)), key='mes')
+    mes = st.sidebar.selectbox('Mes', [''] + sorted(valid_months, key=lambda x: months.index(x)), key='mes')
     marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique()), key='marca')
     tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique()), key='tienda')
     familia = st.sidebar.selectbox('Familia', [''] + sorted(data['Familia'].dropna().unique()), key='familia')
