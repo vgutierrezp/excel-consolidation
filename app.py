@@ -30,17 +30,21 @@ def generate_excel_with_dates(df, store_name):
     max_date = datetime(2024, 12, 31)
 
     for index, row in new_df.iterrows():
-        freq = row['Frecuencia']
-        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
-        col_num = 1
-        while current_date <= max_date:
-            new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
-            current_date += timedelta(days=freq)
-            col_num += 1
+        try:
+            freq = row['Frecuencia']
+            current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
+            col_num = 1
+            while current_date <= max_date:
+                new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
+                current_date += timedelta(days=freq)
+                col_num += 1
+        except Exception as e:
+            st.warning(f"Error processing row {index}: {e}")
+            continue
 
     new_df = new_df.dropna(subset=['Ult. Prev.'])
     new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
+    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y', errors='coerce')
     new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -125,7 +129,7 @@ def main():
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
                     data=planned_excel_data,
-                    file_name='programa_anual_mantenimiento.xlsx',
+                    file_name=f'Plan Anual de Mantenimiento {selected_store}.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
     else:
