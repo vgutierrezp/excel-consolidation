@@ -1,153 +1,62 @@
-import streamlit as st
 import pandas as pd
-from io import BytesIO
-from datetime import datetime
+import numpy as np
+import streamlit as st
 
-# Cargar el archivo consolidado desde el repositorio
-def load_data():
-    url = 'https://raw.githubusercontent.com/vgutierrezp/excel-consolidation/main/consolidated_file.xlsx'
-    try:
-        data = pd.read_excel(url)
-        return data
-    except Exception as e:
-        st.error(f"Error al cargar los datos: {e}")
-        return pd.DataFrame()
+# Función para obtener la fecha más reciente de 'Ejec.1'
+def get_recent_execution_date(group):
+    return group.loc[group['Ejec.1'].idxmax()]
 
-# Función para convertir el DataFrame a Excel
-def to_excel(df):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
-    processed_data = output.getvalue()
-    return processed_data
-
-# Función para generar el Excel filtrado
-def generate_excel(data, store_name):
-    output = BytesIO()
-    columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1']
-
-    # Crear columna de concatenación única para identificar servicios únicos
-    data['Unique_Service'] = data['Familia'] + data['Tipo de Equipo'] + data['Tipo de Servicio']
-
-    # Filtrar los datos por tienda
-    filtered_df = data[data['Tienda'] == store_name].copy()
-
-    # Convertir columnas de fecha a datetime
-    filtered_df['Ejec.1'] = pd.to_datetime(filtered_df['Ejec.1'], errors='coerce')
-    filtered_df['Ult. Prev.'] = pd.to_datetime(filtered_df['Ult. Prev.'], errors='coerce')
-
-    # Obtener el mes actual
-    current_month = datetime.now().month
-
-    # Filtrar por los meses de enero al mes actual y quedarse con la fecha más reciente en Ejec.1
-    filtered_df_jan_to_now = filtered_df[(filtered_df['Ejec.1'].dt.month >= 1) & (filtered_df['Ejec.1'].dt.month <= current_month)]
-    filtered_df_jan_to_now = filtered_df_jan_to_now.loc[filtered_df_jan_to_now.groupby('Unique_Service')['Ejec.1'].idxmax()]
-
-    # Filtrar por los meses posteriores y quedarse con la fecha más reciente en Ult. Prev.
-    filtered_df_next_months = filtered_df[filtered_df['Ejec.1'].isna() & (filtered_df['Ult. Prev.'].dt.month > current_month)]
-    filtered_df_next_months = filtered_df_next_months.loc[filtered_df_next_months.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
-
-    # Combinar los dos dataframes
-    final_df = pd.concat([filtered_df_jan_to_now, filtered_df_next_months])
-
-    # Verificar y añadir servicios únicos en meses posteriores
-    new_services = filtered_df[~filtered_df['Unique_Service'].isin(final_df['Unique_Service'])]
-    if not new_services.empty:
-        new_services = new_services.loc[new_services.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
-        final_df = pd.concat([final_df, new_services])
-
-    # Seleccionar las columnas necesarias
-    final_df = final_df[columns_to_include].copy()
-
-    # Guardar los datos en un archivo Excel
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        worksheet_name = 'Fechas Planificadas'
-        final_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
-        worksheet = writer.sheets[worksheet_name]
-        worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
-        bold = writer.book.add_format({'bold': True})
-        worksheet.set_row(0, None, bold)
-        worksheet.set_column('H:H', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
-        worksheet.set_column('I:I', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
-    processed_data = output.getvalue()
-    return processed_data
+# Función para obtener la fecha más reciente de 'Ult. Prev.' para nuevas concatenaciones
+def get_recent_prev_date(group):
+    return group.loc[group['Ult. Prev.'].idxmax()]
 
 # Función principal
 def main():
     st.title("Programa de Mantenimiento Preventivo")
 
-    data = load_data()
+    # Cargar los datos
+    data = pd.read_excel("path/to/your/datafile.xlsx")
 
-    if data.empty:
-        st.error("No se pudieron cargar los datos.")
-        return
+    # Asegurarse de que las fechas estén en el formato correcto
+    data['Ult. Prev.'] = pd.to_datetime(data['Ult. Prev.'], format='%Y-%m-%d %H:%M:%S')
+    data['Ejec.1'] = pd.to_datetime(data['Ejec.1'], format='%Y-%m-%d %H:%M:%S')
 
-    # Filtrado por columnas específicas
-    st.sidebar.header('Filtros')
+    # Filtros de la tienda
+    selected_store = st.sidebar.selectbox('Tienda', data['Tienda'].unique())
+    filtered_data = data[data['Tienda'] == selected_store]
 
-    # Inicializar filtros con listas ordenadas
-    month_order = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-    months = sorted(data['Mes'].dropna().unique(), key=lambda x: (month_order.index(x) if x in month_order else float('inf')))
-    brands = sorted([''] + list(data['Marca'].dropna().unique()))
-    stores = sorted([''] + list(data['Tienda'].dropna().unique()))
-    families = sorted([''] + list(data['Familia'].dropna().unique()))
+    # Crear columna 'Unique_Service'
+    filtered_data['Unique_Service'] = (filtered_data['Familia'] + 
+                                       filtered_data['Tipo de Equipo'] + 
+                                       filtered_data['Tipo de Servicio'])
 
-    # Crear filtros dependientes
-    selected_month = st.sidebar.selectbox('Mes', options=[''] + months)
-    filtered_data = data if selected_month == '' else data[data['Mes'] == selected_month]
+    # Filtrar datos de Enero al mes en curso
+    current_month = pd.to_datetime('now').month
+    current_year = pd.to_datetime('now').year
+    filtered_data['Mes_Num'] = pd.to_datetime(filtered_data['Ult. Prev.']).dt.month
+    filtered_data['Year'] = pd.to_datetime(filtered_data['Ult. Prev.']).dt.year
+    jan_to_current = filtered_data[(filtered_data['Mes_Num'] >= 1) & (filtered_data['Mes_Num'] <= current_month) & (filtered_data['Year'] == current_year)]
 
-    selected_brand = st.sidebar.selectbox('Marca', options=[''] + sorted(filtered_data['Marca'].dropna().unique()))
-    filtered_data = filtered_data if selected_brand == '' else filtered_data[filtered_data['Marca'] == selected_brand]
+    # Obtener las filas con las fechas más recientes en 'Ejec.1'
+    recent_executions = jan_to_current.groupby('Unique_Service').apply(get_recent_execution_date).reset_index(drop=True)
 
-    selected_store = st.sidebar.selectbox('Tienda', options=[''] + sorted(filtered_data['Tienda'].dropna().unique()))
-    filtered_data = filtered_data if selected_store == '' else filtered_data[filtered_data['Tienda'] == selected_store]
+    # Filtrar datos del mes siguiente hasta Diciembre
+    next_month_to_dec = filtered_data[(filtered_data['Mes_Num'] > current_month) & (filtered_data['Year'] == current_year)]
 
-    selected_family = st.sidebar.selectbox('Familia', options=[''] + sorted(filtered_data['Familia'].dropna().unique()))
-    filtered_data = filtered_data if selected_family == '' else filtered_data[filtered_data['Familia'] == selected_family]
+    # Obtener las filas con las fechas más recientes en 'Ult. Prev.'
+    recent_prevs = next_month_to_dec.groupby('Unique_Service').apply(get_recent_prev_date).reset_index(drop=True)
 
-    # Columnas a mostrar
-    columns_to_show = ['Mes', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 
-                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    data = filtered_data[columns_to_show]
+    # Concatenar los resultados
+    final_data = pd.concat([recent_executions, recent_prevs]).drop_duplicates(subset='Unique_Service')
 
-    # Formatear las columnas de fecha
-    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
-    for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
+    # Seleccionar las columnas necesarias
+    final_data = final_data[['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1']]
 
-    # Ordenar los meses según el calendario y luego por Familia
-    data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
-    data = data.sort_values(by=['Mes', 'Familia'], ascending=[True, True])
+    # Guardar el resultado en un nuevo archivo Excel
+    output_filename = f"Plan de Mantenimiento Anual - {selected_store}.xlsx"
+    final_data.to_excel(output_filename, index=False)
 
-    # Mostrar los datos filtrados con las columnas seleccionadas
-    st.write(data)
-
-    # Opción para descargar el archivo filtrado
-    st.sidebar.header('Descargar Datos')
-    if not data.empty:
-        excel_data = to_excel(data)
-        st.sidebar.download_button(
-            label='Descargar Excel',
-            data=excel_data,
-            file_name='filtered_data.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-
-    # Botón para generar el Excel filtrado
-    if selected_store:
-        if st.sidebar.button('Programa Anual de Mantenimiento'):
-            if selected_month or selected_brand or selected_family:
-                st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
-            else:
-                planned_excel_data = generate_excel(data, selected_store)
-                st.sidebar.download_button(
-                    label='Descargar Programa Anual',
-                    data=planned_excel_data,
-                    file_name=f'Plan de Mantenimiento Anual {selected_store}.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-    else:
-        st.sidebar.warning("Por favor, seleccione una tienda.")
+    st.success(f"Archivo guardado como {output_filename}")
 
 if __name__ == "__main__":
     main()
