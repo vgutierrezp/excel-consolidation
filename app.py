@@ -121,12 +121,18 @@ def generate_excel_with_dates(original_data, filtered_data, store_name):
     return href
 
 def add_months_with_limit(source_date, months, max_date):
-    if not isinstance(source_date, pd.Timestamp):
-        source_date = pd.to_datetime(source_date, errors='coerce')
-    if pd.isna(source_date):
+    try:
+        if not isinstance(source_date, pd.Timestamp):
+            source_date = pd.to_datetime(source_date, errors='coerce')
+        if pd.isna(source_date):
+            return pd.NaT
+        new_date = source_date + pd.DateOffset(months=months)
+        if new_date > max_date:
+            return max_date
+        return new_date
+    except Exception as e:
+        print(f"Error: {e}")
         return pd.NaT
-    new_date = source_date + pd.DateOffset(months=months)
-    return min(new_date, max_date)
 
 # Ejecutar la aplicación
 if 'mes' not in st.session_state:
