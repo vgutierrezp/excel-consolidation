@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
@@ -21,48 +21,36 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-# Función para generar el Excel con las fechas calculadas
-def generate_excel_with_dates(df, store_name):
+# Función para generar el Excel filtrado
+def generate_excel(data, store_name):
     output = BytesIO()
-    columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
+    columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
-    # Filtrar datos por Tienda
-    df = df[df['Tienda'] == store_name]
+    # Crear columna de concatenación única para identificar servicios únicos
+    data['Unique_Service'] = data['Familia'] + data['Tipo de Equipo'] + data['Tipo de Servicio']
 
-    # Concatenar columnas
-    df['Unique_Service'] = df['Familia'] + df['Tipo de Equipo'] + df['Tipo de Servicio']
-
-    # Eliminar duplicados y quedarse con filas con fecha más reciente en Ejec.1 de enero al mes en curso
+    # Filtrar los datos por tienda y eliminar duplicados, quedándose con la fecha más reciente en Ejec.1 de enero al mes actual
+    filtered_df = data[data['Tienda'] == store_name]
+    filtered_df['Ejec.1'] = pd.to_datetime(filtered_df['Ejec.1'], errors='coerce')
     current_month = datetime.now().month
-    df['Ejec.1'] = pd.to_datetime(df['Ejec.1'], errors='coerce')
-    df = df[(df['Ejec.1'].dt.month >= 1) & (df['Ejec.1'].dt.month <= current_month)]
-    df = df.loc[df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+    filtered_df = filtered_df[(filtered_df['Ejec.1'].dt.month >= 1) & (filtered_df['Ejec.1'].dt.month <= current_month)]
+    filtered_df = filtered_df.loc[filtered_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
 
     # Buscar filas con fechas en meses posteriores en Ult. Prev.
-    df_remaining = df[(df['Ejec.1'].dt.month > current_month) & (df['Ejec.1'].isnull())]
+    df_remaining = data[(data['Ejec.1'].isna()) & (data['Ult. Prev.'] >= '2024-01-01')]
     df_remaining['Ult. Prev.'] = pd.to_datetime(df_remaining['Ult. Prev.'], errors='coerce')
     df_remaining = df_remaining.loc[df_remaining.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     # Concatenar ambos DataFrames
-    new_df = pd.concat([df, df_remaining])
+    final_df = pd.concat([filtered_df, df_remaining])
 
-    new_df = new_df[columns_to_copy].copy()
-    max_date = datetime(2024, 12, 31)
+    # Seleccionar las columnas necesarias
+    final_df = final_df[columns_to_include].copy()
 
-    for index, row in new_df.iterrows():
-        freq = row['Frecuencia']
-        current_date = row['Ult. Prev.']
-        col_num = 1
-        while current_date <= max_date:
-            new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
-            current_date += timedelta(days=freq)
-            col_num += 1
-
-    new_df = new_df.dropna(subset=['Ult. Prev.'])
-
+    # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
-        new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
+        final_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
         worksheet = writer.sheets[worksheet_name]
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
@@ -132,13 +120,13 @@ def main():
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
-    # Botón para generar el Excel con fechas calculadas
+    # Botón para generar el Excel filtrado
     if selected_store:
         if st.sidebar.button('Programa Anual de Mantenimiento'):
             if selected_month or selected_brand or selected_family:
                 st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
             else:
-                planned_excel_data = generate_excel_with_dates(filtered_data, selected_store)
+                planned_excel_data = generate_excel(data, selected_store)
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
                     data=planned_excel_data,
