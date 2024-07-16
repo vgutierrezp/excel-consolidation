@@ -26,12 +26,32 @@ def generate_excel_with_dates(df, store_name):
     output = BytesIO()
     columns_to_copy = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
 
-    new_df = df[columns_to_copy].copy()
+    # Filtrar datos por Tienda
+    df = df[df['Tienda'] == store_name]
+
+    # Concatenar columnas
+    df['Unique_Service'] = df['Familia'] + df['Tipo de Equipo'] + df['Tipo de Servicio']
+
+    # Eliminar duplicados y quedarse con filas con fecha más reciente en Ejec.1 de enero al mes en curso
+    current_month = datetime.now().month
+    df['Ejec.1'] = pd.to_datetime(df['Ejec.1'], errors='coerce')
+    df = df[(df['Ejec.1'].dt.month >= 1) & (df['Ejec.1'].dt.month <= current_month)]
+    df = df.loc[df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+
+    # Buscar filas con fechas en meses posteriores en Ult. Prev.
+    df_remaining = df[(df['Ejec.1'].dt.month > current_month) & (df['Ejec.1'].isnull())]
+    df_remaining['Ult. Prev.'] = pd.to_datetime(df_remaining['Ult. Prev.'], errors='coerce')
+    df_remaining = df_remaining.loc[df_remaining.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
+
+    # Concatenar ambos DataFrames
+    new_df = pd.concat([df, df_remaining])
+
+    new_df = new_df[columns_to_copy].copy()
     max_date = datetime(2024, 12, 31)
 
     for index, row in new_df.iterrows():
         freq = row['Frecuencia']
-        current_date = pd.to_datetime(row['Ult. Prev.'], format='%d/%m/%Y')
+        current_date = row['Ult. Prev.']
         col_num = 1
         while current_date <= max_date:
             new_df.loc[index, f'Prog.{col_num}'] = current_date.strftime('%d/%m/%Y')
@@ -39,9 +59,6 @@ def generate_excel_with_dates(df, store_name):
             col_num += 1
 
     new_df = new_df.dropna(subset=['Ult. Prev.'])
-    new_df['Unique_Service'] = new_df['Familia'] + new_df['Tipo de Equipo'] + new_df['Tipo de Servicio'] + new_df['Ejecutor'] + new_df['Frecuencia'].astype(str)
-    new_df['Ult. Prev.'] = pd.to_datetime(new_df['Ult. Prev.'], format='%d/%m/%Y')
-    new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         worksheet_name = 'Fechas Planificadas'
@@ -125,7 +142,7 @@ def main():
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
                     data=planned_excel_data,
-                    file_name='programa_anual_mantenimiento.xlsx',
+                    file_name=f'Plan de Mantenimiento Anual {selected_store}.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
     else:
