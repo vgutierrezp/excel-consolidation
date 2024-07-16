@@ -44,7 +44,7 @@ def generate_excel_with_dates(df, store_name):
     new_df = new_df.loc[new_df.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        worksheet_name = 'Fechas Planificadas'
+        worksheet_name = store_name
         new_df.to_excel(writer, index=False, sheet_name=worksheet_name, startrow=2)
         worksheet = writer.sheets[worksheet_name]
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
