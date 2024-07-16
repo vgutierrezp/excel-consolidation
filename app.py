@@ -25,8 +25,14 @@ def generate_excel_with_dates(original_df, filtered_df, store_name):
     # Filter rows with non-empty 'Marca' column
     filtered_df = filtered_df[filtered_df['Marca'].notna()]
     
+    # Ensure 'Ejec.1' has non-null values before using idxmax
+    filtered_df = filtered_df[filtered_df['Ejec.1'].notna()]
+    
     # Group by 'Unique_Service' and get the most recent 'Ejec.1'
-    new_df = filtered_df.loc[filtered_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+    if not filtered_df.empty:
+        new_df = filtered_df.loc[filtered_df.groupby('Unique_Service')['Ejec.1'].idxmax()]
+    else:
+        new_df = pd.DataFrame(columns=filtered_df.columns)
     
     # Initialize the new DataFrame for the plan
     plan_columns = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Frecuencia', 'N° Equipos', 'Ult. Prev.']
@@ -56,6 +62,15 @@ def generate_excel_with_dates(original_df, filtered_df, store_name):
     worksheet.merge_cells('A1:G1')
     worksheet.cell(row=1, column=1).value = f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}'
     
+    writer.save()
+    processed_data = output.getvalue()
+    return processed_data
+
+# Function to download the filtered data
+def download_filtered_data(df):
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='openpyxl')
+    df.to_excel(writer, index=False, sheet_name='Filtered Data')
     writer.save()
     processed_data = output.getvalue()
     return processed_data
@@ -104,6 +119,16 @@ def main():
             label=f'Descargar Plan Anual de Mantenimiento ({store_name})',
             data=planned_excel_data,
             file_name=f'Plan Anual de Mantenimiento {store_name}.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    
+    # Button to download filtered data
+    if not filtered_data.empty:
+        filtered_excel_data = download_filtered_data(filtered_data)
+        st.sidebar.download_button(
+            label='Descargar Datos Filtrados',
+            data=filtered_excel_data,
+            file_name='Datos Filtrados.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
