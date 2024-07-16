@@ -47,8 +47,14 @@ def generate_excel(data, store_name):
     filtered_df_next_months = filtered_df[filtered_df['Ejec.1'].isna() & (filtered_df['Ult. Prev.'].dt.month > current_month)]
     filtered_df_next_months = filtered_df_next_months.loc[filtered_df_next_months.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
-    # Concatenar ambos DataFrames
+    # Combinar los dos dataframes
     final_df = pd.concat([filtered_df_jan_to_now, filtered_df_next_months])
+
+    # Verificar y añadir servicios únicos en meses posteriores
+    new_services = filtered_df[~filtered_df['Unique_Service'].isin(final_df['Unique_Service'])]
+    if not new_services.empty:
+        new_services = new_services.loc[new_services.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
+        final_df = pd.concat([final_df, new_services])
 
     # Seleccionar las columnas necesarias
     final_df = final_df[columns_to_include].copy()
