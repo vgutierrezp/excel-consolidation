@@ -20,6 +20,9 @@ def main():
         st.error(f"Error al leer el archivo Excel: {str(e)}")
         return
 
+    # Filtrar filas donde la columna 'Marca' no esté vacía
+    data = data.dropna(subset=['Marca'])
+
     # Definir los filtros
     st.sidebar.header('Filtros')
 
@@ -83,12 +86,15 @@ def generate_excel_with_dates(df, store_name):
     df['Ult. Prev.'] = pd.to_datetime(df['Ult. Prev.'], errors='coerce')
     df = df.sort_values(by='Ult. Prev.', ascending=False).drop_duplicates('Unique_Service')
 
+    # Asegurarse de que la frecuencia sea un entero válido, reemplazar los valores inválidos con 1
+    df['Frecuencia'] = pd.to_numeric(df['Frecuencia'], errors='coerce').fillna(1).astype(int)
+
     # Inicializar un nuevo DataFrame
     plan_df = df.copy()
 
     # Calcular las fechas programadas
     for i in range(1, 25):  # Calculando hasta 24 meses adelante
-        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'].astype(int))
+        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
 
     # Crear el archivo Excel
     output_file = f"Plan Anual de Mantenimiento {store_name}.xlsx"
@@ -104,13 +110,12 @@ def generate_excel_with_dates(df, store_name):
     return f'[Descargar Plan Anual de Mantenimiento](Plan Anual de Mantenimiento {store_name}.xlsx)'
 
 # Ejecutar la aplicación
-if __name__ == "__main__":
-    if 'mes' not in st.session_state:
-        st.session_state['mes'] = ''
-    if 'marca' not in st.session_state:
-        st.session_state['marca'] = ''
-    if 'tienda' not in st.session_state:
-        st.session_state['tienda'] = ''
-    if 'familia' not in st.session_state:
-        st.session_state['familia'] = ''
-    main()
+if 'mes' not in st.session_state:
+    st.session_state['mes'] = ''
+if 'marca' not in st.session_state:
+    st.session_state['marca'] = ''
+if 'tienda' not in st.session_state:
+    st.session_state['tienda'] = ''
+if 'familia' not in st.session_state:
+    st.session_state['familia'] = ''
+main()
