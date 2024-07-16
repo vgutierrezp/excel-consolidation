@@ -44,7 +44,7 @@ def generate_excel(data, store_name):
     filtered_df_jan_to_now = filtered_df_jan_to_now.loc[filtered_df_jan_to_now.groupby('Unique_Service')['Ejec.1'].idxmax()]
 
     # Filtrar por los meses posteriores y quedarse con la fecha más reciente en Ult. Prev.
-    filtered_df_next_months = filtered_df[filtered_df['Ejec.1'].isna() & (filtered_df['Ult. Prev.'].dt.month > current_month)]
+    filtered_df_next_months = filtered_df[(filtered_df['Ejec.1'].isna()) & (filtered_df['Ult. Prev.'].dt.month > current_month)]
     filtered_df_next_months = filtered_df_next_months.loc[filtered_df_next_months.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
 
     # Combinar los dos dataframes
