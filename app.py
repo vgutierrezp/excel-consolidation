@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import timedelta
 import io
 
 def generate_excel_with_dates(df, store_name):
@@ -18,13 +17,13 @@ def generate_excel_with_dates(df, store_name):
     # Calcular las fechas programadas
     plan_df['Ult. Prev.'] = pd.to_datetime(plan_df['Ult. Prev.'], errors='coerce')
     for i in range(1, 13):  # Ajustar el rango según la cantidad de frecuencias necesarias
-        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + plan_df['Frecuencia'].apply(lambda x: pd.DateOffset(months=i*x))
-
+        plan_df[f'Prog.{i}'] = plan_df['Ult. Prev.'] + pd.DateOffset(months=i*plan_df['Frecuencia'])
+    
     # Formatear las fechas
     date_columns = [col for col in plan_df.columns if 'Prog.' in col]
     for col in date_columns:
         plan_df[col] = plan_df[col].dt.strftime('%d/%m/%Y')
-
+    
     # Crear el archivo Excel en memoria
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -67,7 +66,9 @@ def main():
         st.session_state['familia'] = ''
 
     # Definir los valores iniciales de los filtros
-    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique().tolist()), key='mes')
+    # Ordenar meses cronológicamente
+    months = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
+    mes = st.sidebar.selectbox('Mes', [''] + sorted(data['Mes'].dropna().unique(), key=lambda x: months.index(x)), key='mes')
     marca = st.sidebar.selectbox('Marca', [''] + sorted(data['Marca'].dropna().unique().tolist()), key='marca')
     tienda = st.sidebar.selectbox('Tienda', [''] + sorted(data['Tienda'].dropna().unique().tolist()), key='tienda')
     familia = st.sidebar.selectbox('Familia', [''] + sorted(data['Familia'].dropna().unique().tolist()), key='familia')
@@ -82,6 +83,9 @@ def main():
         filtered_data = filtered_data[filtered_data['Tienda'] == tienda]
     if familia:
         filtered_data = filtered_data[filtered_data['Familia'] == familia]
+
+    # Ordenar la tabla de manera cronológica
+    filtered_data = filtered_data.sort_values(by=['Ult. Prev.'], ascending=True)
 
     # Mostrar la tabla filtrada
     st.dataframe(filtered_data)
