@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import io
+import base64
 
 def main():
     st.title('Programa de Mantenimiento Preventivo')
@@ -114,7 +115,10 @@ def generate_excel_with_dates(df, store_name):
         writer.save()
     output.seek(0)
 
-    return f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{base64.b64encode(output.read()).decode()}" download="Plan Anual de Mantenimiento {store_name}.xlsx">Descargar Plan Anual de Mantenimiento</a>'
+    # Generar el enlace de descarga
+    b64 = base64.b64encode(output.read()).decode()
+    href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="Plan Anual de Mantenimiento {store_name}.xlsx">Descargar Plan Anual de Mantenimiento</a>'
+    return href
 
 def add_months_with_limit(source_date, months, max_date):
     try:
