@@ -67,8 +67,9 @@ def generate_excel(data, store_name):
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
-        worksheet.set_column('H:H', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
-        worksheet.set_column('I:I', None, writer.book.add_format({'num_format': 'dd/mm/yyyy'}))
+        date_format = writer.book.add_format({'num_format': 'dd/mm/yy'})
+        worksheet.set_column('H:H', None, date_format)
+        worksheet.set_column('I:I', None, date_format)
     processed_data = output.getvalue()
     return processed_data
 
