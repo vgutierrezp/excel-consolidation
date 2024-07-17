@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
@@ -80,7 +80,7 @@ def generate_excel(data, store_name):
 
     # Formatear las fechas a DD-MM-YYYY
     for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo'] + [f'Prog.{i}' for i in range(1, num_progs + 1)]:
-        final_df[col] = final_df[col].dt.strftime('%d-%m-%Y').fillna('')
+        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -164,5 +164,4 @@ def main():
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
                     data=planned_excel_data,
-                    file_name=f'Plan de Mantenimiento Anual {selected_store}.xlsx',
-                    mime='application
+                    file_name
