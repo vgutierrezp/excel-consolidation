@@ -41,7 +41,7 @@ def generate_excel(data, store_name):
 
     # Convertir columnas de fecha a datetime
     for col in ['Ejec.1', 'Ult. Prev.']:
-        filtered_df[col] = pd.to_datetime(filtered_df[col], format='%Y-%d-%m', errors='coerce')
+        filtered_df[col] = pd.to_datetime(filtered_df[col], format='%Y-%m-%d', errors='coerce')
 
     # Obtener el mes actual
     current_month = datetime.now().month
@@ -66,9 +66,9 @@ def generate_excel(data, store_name):
     # Seleccionar las columnas necesarias
     final_df = final_df[columns_to_include].copy()
 
-    # Formatear las fechas a DD/MM/YYYY
-    final_df['Ult. Prev.'] = final_df['Ult. Prev.'].dt.strftime('%d/%m/%Y')
-    final_df['Ejec.1'] = final_df['Ejec.1'].dt.strftime('%d/%m/%Y')
+    # Formatear las fechas a YYYY-MM-DD (mantenemos el formato original)
+    final_df['Ult. Prev.'] = final_df['Ult. Prev.'].dt.strftime('%Y-%m-%d')
+    final_df['Ejec.1'] = final_df['Ejec.1'].dt.strftime('%Y-%m-%d')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -78,9 +78,6 @@ def generate_excel(data, store_name):
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
-        date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
-        worksheet.set_column('H:H', None, date_format)
-        worksheet.set_column('I:I', None, date_format)
     processed_data = output.getvalue()
     return processed_data
 
@@ -125,7 +122,7 @@ def main():
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
