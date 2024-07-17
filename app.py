@@ -43,12 +43,6 @@ def generate_excel(data, store_name):
     for col in ['Ejec.1', 'Ult. Prev.']:
         filtered_df[col] = pd.to_datetime(filtered_df[col], format='%Y-%m-%d', errors='coerce')
 
-    # Añadir verificación de columnas antes de continuar
-    for col in ['Unique_Service', 'Ult. Prev.', 'Ejec.1']:
-        if col not in filtered_df.columns:
-            st.error(f"La columna {col} no se encuentra en los datos filtrados.")
-            return
-
     # Obtener el mes actual
     current_month = datetime.now().month
 
@@ -80,9 +74,9 @@ def generate_excel(data, store_name):
     final_df['Prog.1'] = final_df['Ult. Preventivo'] + pd.to_timedelta(final_df['Frecuencia'], unit='D')
     final_df['Prog.1'] = final_df['Prog.1'].apply(lambda x: x if x <= max_date else None)
 
-    # Formatear las fechas a DD-MM-YYYY
+    # Formatear las fechas a YYYY-MM-DD
     for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo', 'Prog.1']:
-        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
+        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -136,7 +130,7 @@ def main():
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
@@ -173,4 +167,4 @@ def main():
         st.sidebar.warning("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
-    main()
+    main
