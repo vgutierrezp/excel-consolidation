@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
@@ -21,7 +21,7 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-# Función para generar el Excel filtrado con las columnas Prog
+# Función para generar el Excel filtrado
 def generate_excel(data, store_name):
     output = BytesIO()
     columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1']
@@ -69,18 +69,9 @@ def generate_excel(data, store_name):
     # Crear la nueva columna 'Ult. Preventivo'
     final_df['Ult. Preventivo'] = final_df['Ejec.1'].combine_first(final_df['Ult. Prev.'])
 
-    # Añadir columnas Prog.1, Prog.2, etc.
-    max_date = datetime.strptime('2024-12-31', '%Y-%m-%d')
-    num_progs = 12  # Define the number of Prog columns needed
-
-    for i in range(1, num_progs + 1):
-        col_name = f'Prog.{i}'
-        final_df[col_name] = final_df['Ult. Preventivo'] + pd.to_timedelta(final_df['Frecuencia'] * i, unit='D')
-        final_df[col_name] = final_df[col_name].apply(lambda x: x if x <= max_date else None)
-
-    # Formatear las fechas a DD-MM-YYYY
-    for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo'] + [f'Prog.{i}' for i in range(1, num_progs + 1)]:
-        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
+    # Formatear las fechas a YYYY-MM-DD (mantenemos el formato original)
+    for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo']:
+        final_df[col] = final_df[col].dt.strftime('%Y-%m-%d')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -134,7 +125,7 @@ def main():
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
@@ -164,4 +155,11 @@ def main():
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
                     data=planned_excel_data,
-                    file_name
+                    file_name=f'Plan de Mantenimiento Anual {selected_store}.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+    else:
+        st.sidebar.warning("Por favor, seleccione una tienda.")
+
+if __name__ == "__main__":
+    main()
