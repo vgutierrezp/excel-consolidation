@@ -74,9 +74,9 @@ def generate_excel(data, store_name):
     final_df['Prog.1'] = final_df['Ult. Preventivo'] + pd.to_timedelta(final_df['Frecuencia'], unit='D')
     final_df['Prog.1'] = final_df['Prog.1'].apply(lambda x: x if x <= max_date else None)
 
-    # Formatear las fechas a YYYY-MM-DD (mantenemos el formato original)
+    # Formatear las fechas a DD-MM-YYYY
     for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo', 'Prog.1']:
-        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
+        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -130,7 +130,7 @@ def main():
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
