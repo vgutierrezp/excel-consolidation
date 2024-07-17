@@ -24,7 +24,7 @@ def to_excel(df):
 # Función para generar el Excel filtrado
 def generate_excel(data, store_name):
     output = BytesIO()
-    columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1', 'Ult. Preventivo']
+    columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1']
 
     required_columns = ['Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Tienda', 'Ejec.1', 'Ult. Prev.']
     missing_columns = [col for col in required_columns if col not in data.columns]
@@ -63,16 +63,15 @@ def generate_excel(data, store_name):
         new_services = new_services.loc[new_services.groupby('Unique_Service')['Ult. Prev.'].idxmax()]
         final_df = pd.concat([final_df, new_services])
 
-    # Crear columna 'Ult. Preventivo'
-    final_df['Ult. Preventivo'] = final_df['Ejec.1'].combine_first(final_df['Ult. Prev.'])
-
     # Seleccionar las columnas necesarias
     final_df = final_df[columns_to_include].copy()
 
-    # Formatear las fechas a DD-MM-YYYY
-    final_df['Ult. Prev.'] = pd.to_datetime(final_df['Ult. Prev.'], format='%Y-%d-%m').dt.strftime('%d-%m-%Y')
-    final_df['Ejec.1'] = pd.to_datetime(final_df['Ejec.1'], format='%Y-%d-%m').dt.strftime('%d-%m-%Y')
-    final_df['Ult. Preventivo'] = pd.to_datetime(final_df['Ult. Preventivo'], format='%Y-%d-%m').dt.strftime('%d-%m-%Y')
+    # Crear la nueva columna 'Ult. Preventivo'
+    final_df['Ult. Preventivo'] = final_df['Ejec.1'].combine_first(final_df['Ult. Prev.'])
+
+    # Formatear las fechas a YYYY-MM-DD (mantenemos el formato original)
+    for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo']:
+        final_df[col] = final_df[col].dt.strftime('%Y-%m-%d')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -126,7 +125,7 @@ def main():
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
