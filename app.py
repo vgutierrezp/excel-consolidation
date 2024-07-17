@@ -43,6 +43,12 @@ def generate_excel(data, store_name):
     for col in ['Ejec.1', 'Ult. Prev.']:
         filtered_df[col] = pd.to_datetime(filtered_df[col], format='%Y-%m-%d', errors='coerce')
 
+    # Añadir verificación de columnas antes de continuar
+    for col in ['Unique_Service', 'Ult. Prev.', 'Ejec.1']:
+        if col not in filtered_df.columns:
+            st.error(f"La columna {col} no se encuentra en los datos filtrados.")
+            return
+
     # Obtener el mes actual
     current_month = datetime.now().month
 
