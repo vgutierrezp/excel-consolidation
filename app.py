@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Cargar el archivo consolidado desde el repositorio
 def load_data():
@@ -69,9 +69,18 @@ def generate_excel(data, store_name):
     # Crear la nueva columna 'Ult. Preventivo'
     final_df['Ult. Preventivo'] = final_df['Ejec.1'].combine_first(final_df['Ult. Prev.'])
 
-    # Formatear las fechas a YYYY-MM-DD (mantenemos el formato original)
-    for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo']:
-        final_df[col] = final_df[col].dt.strftime('%Y-%m-%d')
+    # Crear las columnas Prog.1, Prog.2, ..., Prog.n sumando la frecuencia a Ult. Preventivo
+    max_date = datetime(2024, 12, 31)
+    freq = final_df['Frecuencia'].astype(int)
+    base_date = pd.to_datetime(final_df['Ult. Preventivo'], format='%Y-%m-%d')
+    
+    prog_columns = []
+    for i in range(1, 13):  # Ajustar el rango según el número máximo de programaciones esperadas
+        col_name = f'Prog.{i}'
+        new_dates = base_date + (i * pd.to_timedelta(freq, unit='d'))
+        new_dates = new_dates.apply(lambda x: x if x <= max_date else None)
+        final_df[col_name] = new_dates.dt.strftime('%d-%m-%Y').fillna('')
+        prog_columns.append(col_name)
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -119,13 +128,13 @@ def main():
 
     # Columnas a mostrar
     columns_to_show = ['Mes', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 
-                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
+                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP'] + prog_columns
     data = filtered_data[columns_to_show]
 
     # Formatear las columnas de fecha
-    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
+    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP'] + prog_columns
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
