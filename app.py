@@ -27,14 +27,25 @@ def generate_excel(data, store_name):
     columns_to_include = ['Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 'Ult. Prev.', 'Ejec.1']
 
     # Crear columna de concatenación única para identificar servicios únicos
-    data['Unique_Service'] = data['Familia'] + data['Tipo de Equipo'] + data['Tipo de Servicio']
+    if all(col in data.columns for col in ['Familia', 'Tipo de Equipo', 'Tipo de Servicio']):
+        data['Unique_Service'] = data['Familia'] + data['Tipo de Equipo'] + data['Tipo de Servicio']
+    else:
+        st.error("Las columnas necesarias para crear 'Unique_Service' no están presentes en los datos.")
+        return
 
     # Filtrar los datos por tienda
+    if 'Tienda' not in data.columns:
+        st.error("La columna 'Tienda' no está presente en los datos.")
+        return
     filtered_df = data[data['Tienda'] == store_name].copy()
 
     # Convertir columnas de fecha a datetime
-    filtered_df['Ejec.1'] = pd.to_datetime(filtered_df['Ejec.1'], format='%Y-%m-%d', errors='coerce')
-    filtered_df['Ult. Prev.'] = pd.to_datetime(filtered_df['Ult. Prev.'], format='%Y-%m-%d', errors='coerce')
+    for col in ['Ejec.1', 'Ult. Prev.']:
+        if col in filtered_df.columns:
+            filtered_df[col] = pd.to_datetime(filtered_df[col], format='%Y-%m-%d', errors='coerce')
+        else:
+            st.error(f"La columna '{col}' no está presente en los datos.")
+            return
 
     # Obtener el mes actual
     current_month = datetime.now().month
