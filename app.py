@@ -33,13 +33,13 @@ def generate_excel(data, store_name):
     filtered_df = data[data['Tienda'] == store_name].copy()
 
     # Convertir columnas de fecha a datetime
-    filtered_df['Ejec.1'] = pd.to_datetime(filtered_df['Ejec.1'], errors='coerce')
-    filtered_df['Ult. Prev.'] = pd.to_datetime(filtered_df['Ult. Prev.'], errors='coerce')
+    filtered_df['Ejec.1'] = pd.to_datetime(filtered_df['Ejec.1'], format='%Y-%m-%d', errors='coerce')
+    filtered_df['Ult. Prev.'] = pd.to_datetime(filtered_df['Ult. Prev.'], format='%Y-%m-%d', errors='coerce')
 
     # Obtener el mes actual
     current_month = datetime.now().month
 
-    # Filtrar por los meses de enero al mes actual y quedarse con la fecha más reciente en Ejec.1
+    # Filtrar por los meses de enero al mes en curso y quedarse con la fecha más reciente en Ejec.1
     filtered_df_jan_to_now = filtered_df[(filtered_df['Ejec.1'].dt.month >= 1) & (filtered_df['Ejec.1'].dt.month <= current_month)]
     filtered_df_jan_to_now = filtered_df_jan_to_now.loc[filtered_df_jan_to_now.groupby('Unique_Service')['Ejec.1'].idxmax()]
 
@@ -60,8 +60,8 @@ def generate_excel(data, store_name):
     final_df = final_df[columns_to_include].copy()
 
     # Formatear las fechas a DD/MM/YY
-    final_df['Ult. Prev.'] = final_df['Ult. Prev.'].dt.strftime('%d/%m/%y')
-    final_df['Ejec.1'] = final_df['Ejec.1'].dt.strftime('%d/%m/%y')
+    final_df['Ult. Prev.'] = final_df['Ult. Prev.'].dt.strftime('%d/%m/%Y')
+    final_df['Ejec.1'] = final_df['Ejec.1'].dt.strftime('%d/%m/%Y')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -71,7 +71,7 @@ def generate_excel(data, store_name):
         worksheet.write('A1', f'PLAN ANUAL DE MANTENIMIENTO DE LA TIENDA: {store_name}')
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
-        date_format = writer.book.add_format({'num_format': 'dd/mm/yy'})
+        date_format = writer.book.add_format({'num_format': 'dd/mm/yyyy'})
         worksheet.set_column('H:H', None, date_format)
         worksheet.set_column('I:I', None, date_format)
     processed_data = output.getvalue()
@@ -118,7 +118,7 @@ def main():
     # Formatear las columnas de fecha
     date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%y').fillna('')
+        data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
 
     # Ordenar los meses según el calendario y luego por Familia
     data['Mes'] = pd.Categorical(data['Mes'], categories=month_order, ordered=True)
