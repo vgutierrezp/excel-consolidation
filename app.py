@@ -77,7 +77,7 @@ def generate_excel(data, store_name):
 
     # Formatear las fechas a DD-MM-YYYY
     for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo', 'Prog.1']:
-        final_df[col] = final_df[col].dt.strftime('%d-%m-%Y')
+        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
