@@ -160,4 +160,9 @@ def main():
             if selected_month or selected_brand or selected_family:
                 st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
             else:
-               
+                planned_excel_data = generate_excel(data, selected_store)
+                st.sidebar.download_button(
+                    label='Descargar Programa Anual',
+                    data=planned_excel_data,
+                    file_name=f'Plan de Mantenimiento Anual {selected_store}.xlsx',
+                    mime='application
