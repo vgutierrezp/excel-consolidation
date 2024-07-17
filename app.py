@@ -59,7 +59,7 @@ def generate_excel(data, store_name):
     # Seleccionar las columnas necesarias
     final_df = final_df[columns_to_include].copy()
 
-    # Formatear las fechas a DD/MM/YY
+    # Formatear las fechas a DD/MM/YYYY
     final_df['Ult. Prev.'] = final_df['Ult. Prev.'].dt.strftime('%d/%m/%Y')
     final_df['Ejec.1'] = final_df['Ejec.1'].dt.strftime('%d/%m/%Y')
 
