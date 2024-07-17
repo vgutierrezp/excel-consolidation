@@ -91,7 +91,7 @@ def generate_excel(data, store_name):
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
     processed_data = output.getvalue()
-    return processed_data
+    return processed_data, prog_columns
 
 # Función principal
 def main():
@@ -128,11 +128,11 @@ def main():
 
     # Columnas a mostrar
     columns_to_show = ['Mes', 'Tienda', 'Familia', 'Tipo de Equipo', 'Tipo de Servicio', 'Ejecutor', 'Frecuencia', 'N° Equipos', 
-                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP'] + prog_columns
+                       'Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     data = filtered_data[columns_to_show]
 
     # Formatear las columnas de fecha
-    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP'] + prog_columns
+    date_columns = ['Ult. Prev.', 'Prog.1', 'Ejec.1', 'CO', 'CL', 'IP', 'RP']
     for col in date_columns:
         data[col] = pd.to_datetime(data[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
 
@@ -160,15 +160,13 @@ def main():
             if selected_month or selected_brand or selected_family:
                 st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
             else:
-                planned_excel_data = generate_excel(data, selected_store)
+                planned_excel_data, prog_columns = generate_excel(data, selected_store)
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
                     data=planned_excel_data,
                     file_name=f'Plan de Mantenimiento Anual {selected_store}.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
-    else:
-        st.sidebar.warning("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
     main()
