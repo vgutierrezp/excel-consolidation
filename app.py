@@ -164,8 +164,7 @@ def main():
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
     else:
-    st.sidebar.warning("Por favor, seleccione una tienda.")
+        st.sidebar.warning("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
     main()
-
