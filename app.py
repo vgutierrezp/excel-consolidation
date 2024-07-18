@@ -43,6 +43,12 @@ def generate_excel(data, store_name):
     for col in ['Ejec.1', 'Ult. Prev.']:
         filtered_df[col] = pd.to_datetime(filtered_df[col], format='%Y-%m-%d', errors='coerce')
 
+    # Añadir verificación de columnas antes de continuar
+    for col in ['Unique_Service', 'Ult. Prev.', 'Ejec.1']:
+        if col not in filtered_df.columns:
+            st.error(f"La columna {col} no se encuentra en los datos filtrados.")
+            return
+
     # Obtener el mes actual
     current_month = datetime.now().month
 
@@ -69,18 +75,14 @@ def generate_excel(data, store_name):
     # Crear la nueva columna 'Ult. Preventivo'
     final_df['Ult. Preventivo'] = final_df['Ejec.1'].combine_first(final_df['Ult. Prev.'])
 
-    # Crear las columnas Prog.1, Prog.2, ..., Prog.n sumando la frecuencia a Ult. Preventivo
-    max_date = datetime(2024, 12, 31)
-    freq = final_df['Frecuencia'].astype(int)
-    base_date = pd.to_datetime(final_df['Ult. Preventivo'], format='%Y-%m-%d')
-    
-    prog_columns = []
-    for i in range(1, 13):  # Ajustar el rango según el número máximo de programaciones esperadas
-        col_name = f'Prog.{i}'
-        new_dates = base_date + (i * pd.to_timedelta(freq, unit='d'))
-        new_dates = new_dates.apply(lambda x: x if x <= max_date else None)
-        final_df[col_name] = new_dates.dt.strftime('%d-%m-%Y').fillna('')
-        prog_columns.append(col_name)
+    # Añadir la columna Prog.1
+    max_date = datetime.strptime('2024-12-31', '%Y-%m-%d')
+    final_df['Prog.1'] = final_df['Ult. Preventivo'] + pd.to_timedelta(final_df['Frecuencia'], unit='D')
+    final_df['Prog.1'] = final_df['Prog.1'].apply(lambda x: x if x <= max_date else None)
+
+    # Formatear las fechas a DD-MM-YYYY
+    for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo', 'Prog.1']:
+        final_df[col] = pd.to_datetime(final_df[col], errors='coerce').dt.strftime('%d-%m-%Y').fillna('')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -91,7 +93,7 @@ def generate_excel(data, store_name):
         bold = writer.book.add_format({'bold': True})
         worksheet.set_row(0, None, bold)
     processed_data = output.getvalue()
-    return processed_data, prog_columns
+    return processed_data
 
 # Función principal
 def main():
@@ -160,13 +162,15 @@ def main():
             if selected_month or selected_brand or selected_family:
                 st.sidebar.warning("Por favor, deje solo el filtro de tienda lleno.")
             else:
-                planned_excel_data, prog_columns = generate_excel(data, selected_store)
+                planned_excel_data = generate_excel(data, selected_store)
                 st.sidebar.download_button(
                     label='Descargar Programa Anual',
                     data=planned_excel_data,
                     file_name=f'Plan de Mantenimiento Anual {selected_store}.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
+    else:
+        st.sidebar.warning("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
     main()
