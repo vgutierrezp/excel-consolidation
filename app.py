@@ -70,12 +70,11 @@ def generate_excel(data, store_name):
     final_df['Ult. Preventivo'] = final_df['Ejec.1'].combine_first(final_df['Ult. Prev.'])
 
     # Crear las columnas Prog.1, Prog.2, ..., Prog.n sumando la frecuencia a Ult. Preventivo
-    max_date = datetime(2024, 12, 31)
     for i in range(1, 13):  # Generar 12 columnas Prog
         col_name = f'Prog.{i}'
         final_df[col_name] = final_df.apply(
-            lambda row: (pd.to_datetime(row['Ult. Preventivo']) + pd.DateOffset(days=i * int(row['Frecuencia'])))
-            if pd.to_datetime(row['Ult. Preventivo']) + pd.DateOffset(days=i * int(row['Frecuencia'])) <= max_date else None, axis=1)
+            lambda row: (pd.to_datetime(row['Ult. Preventivo']) + timedelta(days=i * int(row['Frecuencia'])))
+            if pd.to_datetime(row['Ult. Preventivo']) + timedelta(days=i * int(row['Frecuencia'])) <= datetime(2024, 12, 31) else None, axis=1)
         final_df[col_name] = pd.to_datetime(final_df[col_name], errors='coerce').dt.strftime('%Y-%m-%d')
 
     # Guardar los datos en un archivo Excel
