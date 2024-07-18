@@ -69,9 +69,14 @@ def generate_excel(data, store_name):
     # Crear la nueva columna 'Ult. Preventivo'
     final_df['Ult. Preventivo'] = final_df['Ejec.1'].combine_first(final_df['Ult. Prev.'])
 
-    # Formatear las fechas a YYYY-MM-DD (mantenemos el formato original)
-    for col in ['Ult. Prev.', 'Ejec.1', 'Ult. Preventivo']:
-        final_df[col] = final_df[col].dt.strftime('%Y-%m-%d')
+    # Crear las columnas Prog.1, Prog.2, ..., Prog.n sumando la frecuencia a Ult. Preventivo
+    max_date = datetime(2024, 12, 31)
+    for i in range(1, 13):  # Generar 12 columnas Prog
+        col_name = f'Prog.{i}'
+        final_df[col_name] = final_df.apply(
+            lambda row: (pd.to_datetime(row['Ult. Preventivo']) + pd.DateOffset(months=i * int(row['Frecuencia'])))
+            if pd.to_datetime(row['Ult. Preventivo']) + pd.DateOffset(months=i * int(row['Frecuencia'])) <= max_date else None, axis=1)
+        final_df[col_name] = final_df[col_name].dt.strftime('%Y-%m-%d')
 
     # Guardar los datos en un archivo Excel
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -159,7 +164,8 @@ def main():
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
     else:
-        st.sidebar.warning("Por favor, seleccione una tienda.")
+    st.sidebar.warning("Por favor, seleccione una tienda.")
 
 if __name__ == "__main__":
     main()
+
