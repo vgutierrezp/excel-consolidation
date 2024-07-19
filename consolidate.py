@@ -2,31 +2,34 @@ import pandas as pd
 import os
 
 def consolidate_excels():
-    folder_path = r'C:\Users\vgutierrez\OneDrive - Servicios Compartidos de Restaurantes SAC\Documentos\01 Plan Preventivo Anual NGR\Preventivo\2024 PAM\PROVEEDORES'
+    # Directorio de entrada y salida
+    input_directory = 'C:/Users/vgutierrez/chatbot_project/excel_files'
+    output_file = 'C:/Users/vgutierrez/chatbot_project/consolidated_file.xlsx'
+
+    # Lista para almacenar los DataFrames
     consolidated_data = []
 
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            if file.endswith('.xlsx') and file != 'consolidated_file.xlsx':
-                file_path = os.path.join(root, file)
-                excel_data = pd.ExcelFile(file_path)
+    # Recorrer todos los archivos Excel en el directorio de entrada
+    for filename in os.listdir(input_directory):
+        if filename.endswith(".xlsx"):
+            file_path = os.path.join(input_directory, filename)
+            # Leer el archivo Excel
+            df = pd.read_excel(file_path)
+            consolidated_data.append(df)
 
-                for sheet_name in excel_data.sheet_names:
-                    df = pd.read_excel(excel_data, sheet_name=sheet_name)
-                    
-                    # Remover fechas incorrectas y reemplazar con NaN
-                    date_columns = ['Ult. Prev.', 'Plan.1', 'Prog.1', 'Ejec.1']
-                    for col in date_columns:
-                        df[col] = pd.to_datetime(df[col], errors='coerce')
-                        df[col] = df[col].where(df[col] >= '2023-01-01', pd.NaT)
-                    
-                    df['Source File'] = file
-                    df['Sheet Name'] = sheet_name
-                    consolidated_data.append(df)
-
-    # Consolidar todos los datos en un solo DataFrame
+    # Concatenar todos los DataFrames
     consolidated_df = pd.concat(consolidated_data, ignore_index=True)
-    consolidated_df.to_excel('consolidated_file.xlsx', index=False)
 
-# Llamar a la función de consolidación
-consolidate_excels()
+    # Convertir 'Ult. Prev.' a formato de fecha y 'Frecuencia' a numérico
+    consolidated_df['Ult. Prev.'] = pd.to_datetime(consolidated_df['Ult. Prev.'], errors='coerce')
+    consolidated_df['Frecuencia'] = pd.to_numeric(consolidated_df['Frecuencia'], errors='coerce')
+
+    # Eliminar filas duplicadas
+    consolidated_df = consolidated_df.drop_duplicates()
+
+    # Guardar el DataFrame consolidado en un archivo Excel
+    consolidated_df.to_excel(output_file, index=False)
+    print("Consolidation complete.")
+
+if __name__ == "__main__":
+    consolidate_excels()
