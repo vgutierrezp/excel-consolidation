@@ -1,35 +1,34 @@
-import pandas as pd
 import os
+import pandas as pd
 
-def consolidate_excels():
-    # Directorio de entrada y salida
-    input_directory = 'C:/Users/vgutierrez/chatbot_project/excel_files'
-    output_file = 'C:/Users/vgutierrez/chatbot_project/consolidated_file.xlsx'
+def consolidate_excels(source_folder, output_file):
+    all_data = pd.DataFrame()
 
-    # Lista para almacenar los DataFrames
-    consolidated_data = []
+    # Recorrer todos los archivos en el directorio de proveedores
+    for file in os.listdir(source_folder):
+        if file.endswith(".xlsx") and file != 'consolidated_file.xlsx':  # Ignorar el archivo consolidado anterior
+            file_path = os.path.join(source_folder, file)
+            xls = pd.ExcelFile(file_path)
 
-    # Recorrer todos los archivos Excel en el directorio de entrada
-    for filename in os.listdir(input_directory):
-        if filename.endswith(".xlsx"):
-            file_path = os.path.join(input_directory, filename)
-            # Leer el archivo Excel
-            df = pd.read_excel(file_path)
-            consolidated_data.append(df)
+            # Recorrer todas las hojas del archivo Excel
+            for sheet_name in xls.sheet_names:
+                df = pd.read_excel(xls, sheet_name=sheet_name)
+                if 'Marca' in df.columns:
+                    df = df[df['Marca'].notna() & (df['Marca'] != '')]  # Filtro sobre la columna "Marca"
 
-    # Concatenar todos los DataFrames
-    consolidated_df = pd.concat(consolidated_data, ignore_index=True)
+                    # Agregar las columnas de origen
+                    df['Archivo'] = file
+                    df['Hoja'] = sheet_name
+                    df['Fila'] = df.index + 2  # Asumiendo que el DataFrame original empieza en la fila 2 del archivo Excel
 
-    # Convertir 'Ult. Prev.' a formato de fecha y 'Frecuencia' a numérico
-    consolidated_df['Ult. Prev.'] = pd.to_datetime(consolidated_df['Ult. Prev.'], errors='coerce')
-    consolidated_df['Frecuencia'] = pd.to_numeric(consolidated_df['Frecuencia'], errors='coerce')
+                    all_data = pd.concat([all_data, df], ignore_index=True)
 
-    # Eliminar filas duplicadas
-    consolidated_df = consolidated_df.drop_duplicates()
-
-    # Guardar el DataFrame consolidado en un archivo Excel
-    consolidated_df.to_excel(output_file, index=False)
-    print("Consolidation complete.")
+    # Guardar el archivo consolidado
+    all_data.to_excel(output_file, index=False)
 
 if __name__ == "__main__":
-    consolidate_excels()
+    # Asegurarse de que la ruta de la carpeta de proveedores es correcta
+    source_folder = r"C:\Users\vgutierrez\OneDrive - Servicios Compartidos de Restaurantes SAC\Documentos\01 Plan Preventivo Anual NGR\Preventivo\2024 PAM\PROVEEDORES"
+    output_file = r"C:\Users\vgutierrez\chatbot_project\consolidated_file.xlsx"
+    consolidate_excels(source_folder, output_file)
+    print("Consolidación completada.")
